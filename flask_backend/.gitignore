@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+instance/
+*.db
+.venv/
+models/ml/
+models/__pycache__/
+routes/__pycache__/
+data/
