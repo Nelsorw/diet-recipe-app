@@ -11,16 +11,18 @@ _le_health  = None
 _le_diet    = None
 _le_attr    = None
 _le_meal    = None
+_le_dish    = None
 _feat_cols  = None
 
 
 def load_artifacts():
-    global _model, _le_health, _le_diet, _le_attr, _le_meal, _feat_cols
+    global _model, _le_health, _le_diet, _le_attr, _le_meal, _le_dish, _feat_cols
     _model     = joblib.load(os.path.join(MODEL_DIR, 'suitability_lgbm_model.pkl'))
     _le_health = joblib.load(os.path.join(MODEL_DIR, 'label_encoder_health_condition.pkl'))
     _le_diet   = joblib.load(os.path.join(MODEL_DIR, 'label_encoder_dietary_restrictions.pkl'))
     _le_attr   = joblib.load(os.path.join(MODEL_DIR, 'label_encoder_dietary_attributes.pkl'))
     _le_meal   = joblib.load(os.path.join(MODEL_DIR, 'label_encoder_meal_type.pkl'))
+    _le_dish   = joblib.load(os.path.join(MODEL_DIR, 'label_encoder_dish_type.pkl'))
     with open(os.path.join(MODEL_DIR, 'feature_cols.json')) as f:
         _feat_cols = json.load(f)
 
@@ -44,6 +46,11 @@ def _build_features(recipe, user_health_enc, user_diet_enc, meal_targets):
     except Exception:
         diet_attr_enc = 0
 
+    try:
+        dish_type_enc = int(_le_dish.transform([recipe.get('dish_type', 'Other')])[0])
+    except Exception:
+        dish_type_enc = 0
+
     row = {
         'calories'              : calories,
         'fat'                   : fat,
@@ -64,6 +71,7 @@ def _build_features(recipe, user_health_enc, user_diet_enc, meal_targets):
         'user_health_enc'       : user_health_enc,
         'user_diet_enc'         : user_diet_enc,
         'meal_type_enc'         : meal_type_enc,
+        'dish_type_enc'         : dish_type_enc,
         'dietary_attributes_enc': diet_attr_enc
     }
     return pd.DataFrame([row], columns=_feat_cols)

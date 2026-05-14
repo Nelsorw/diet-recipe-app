@@ -43,6 +43,7 @@ def _get_sample_df(meal_type, exclude_ids=None, sample_size=SAMPLE_SIZE):
         'saturated_fat'     : r.saturated_fat,
         'carbs'             : r.carbs,
         'meal_type'         : r.meal_type,
+        'dish_type'         : r.dish_type,
         'dietary_attributes': r.dietary_attributes,
         'image_url'         : r.image_url
     } for r in recipes])

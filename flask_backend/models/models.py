@@ -131,6 +131,7 @@ class Recipe(db.Model):
     saturated_fat       = db.Column(db.Float, default=0)
     carbs               = db.Column(db.Float, default=0)
     meal_type           = db.Column(db.String(50), default='')
+    dish_type           = db.Column(db.String(50), default='')
     dietary_attributes  = db.Column(db.String(100), default='')
     image_url           = db.Column(db.String(500), nullable=True)
 
@@ -152,6 +153,7 @@ class Recipe(db.Model):
             'saturated_fat'     : self.saturated_fat,
             'carbs'             : self.carbs,
             'meal_type'         : self.meal_type,
+            'dish_type'         : self.dish_type,
             'dietary_attributes': self.dietary_attributes,
             'image_url'         : self.image_url
         }

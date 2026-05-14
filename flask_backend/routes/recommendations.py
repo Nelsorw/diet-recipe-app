@@ -100,6 +100,7 @@ def recommend():
             'saturated_fat'     : r.saturated_fat,
             'carbs'             : r.carbs,
             'meal_type'         : r.meal_type,
+            'dish_type'         : r.dish_type,
             'dietary_attributes': r.dietary_attributes
         } for r in recipes])
 

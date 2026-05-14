@@ -25,9 +25,9 @@ export default function RecipeCard({ recipe }: { recipe: any }) {
             {score}%
           </span>
         )}
-        {recipe.meal_type && (
+        {recipe.dish_type && (
           <span className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize">
-            {recipe.meal_type}
+            {recipe.dish_type}
           </span>
         )}
       </div>

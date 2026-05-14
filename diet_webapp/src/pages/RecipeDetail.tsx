@@ -285,9 +285,9 @@ useEffect(() => {
           ←
         </button>
         <div className="absolute bottom-4 left-4 flex gap-2 flex-wrap">
-          {recipe.meal_type && (
+          {recipe.dish_type && (
             <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full capitalize">
-              {recipe.meal_type}
+              {recipe.dish_type}
             </span>
           )}
           {recipe.dietary_attributes && recipe.dietary_attributes !== 'No Nutritional Focus' && (

@@ -31,7 +31,7 @@ def run():
         df.reset_index(drop=True, inplace=True)
 
         # Fill missing values
-        str_cols = ['name', 'steps', 'description', 'ingredients', 'meal_type',
+        str_cols = ['name', 'steps', 'description', 'ingredients', 'meal_type','dish_type',
                     'dietary_attributes']
         for col in str_cols:
             if col in df.columns:
@@ -70,6 +70,7 @@ def run():
                     saturated_fat       = float(row.get('saturated_fat', 0)),
                     carbs               = float(row.get('carbs', 0)),
                     meal_type           = str(row.get('meal_type', '')),
+                    dish_type           = str(row.get('dish_type', '')),                    
                     dietary_attributes  = str(row.get('dietary_attributes', ''))
                 ))
 
