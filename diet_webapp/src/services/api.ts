@@ -66,7 +66,3 @@ export const getNotifications  = ()              => api.get('/notifications')
 export const markNotifRead     = (id: number)    => api.put(`/notifications/${id}/read`)
 export const markAllNotifsRead = ()              => api.put('/notifications/read-all')
 
-export const getVapidPublicKey  = ()     => api.get('/notifications/vapid-public-key')
-export const subscribePush      = (sub: any) => api.post('/notifications/subscribe', sub)
-export const unsubscribePush    = (sub: any) => api.post('/notifications/unsubscribe', sub)
-

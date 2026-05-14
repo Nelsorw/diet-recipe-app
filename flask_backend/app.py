@@ -14,11 +14,14 @@ from sqlalchemy.engine import Engine
 import sqlite3
 import os
 
+from flask_mail import Mail
+
 load_dotenv()
 
 db     = SQLAlchemy()
 jwt    = JWTManager()
 bcrypt = Bcrypt()
+mail = Mail()
 
 
 def create_app():
@@ -32,6 +35,14 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS']   = {
         'connect_args': {'timeout': 30}
     }
+    app.config['MAIL_SERVER']         = 'smtp.gmail.com'
+    app.config['MAIL_PORT']           = 587
+    app.config['MAIL_USE_TLS']        = True
+    app.config['MAIL_USERNAME']       = os.getenv('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD']       = os.getenv('MAIL_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
+
+
 
     @event.listens_for(Engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -55,6 +66,7 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     bcrypt.init_app(app)
+    mail.init_app(app)
 
     from routes.auth import auth_bp
     from routes.profile import profile_bp

@@ -1,12 +1,11 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useRef, useState } from 'react'
-import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const NAV = [
   { to: '/',         icon: '🏠', label: 'Home'      },
   { to: '/mealplan', icon: '📅', label: 'Meal Plan' },
-  { to: '/log',      icon: '🥗', label: 'Intake'     },
+  { to: '/log',      icon: '🍽', label: 'Diary'     },
   { to: '/progress', icon: '📊', label: 'Progress'  },
   { to: '/profile',  icon: '👤', label: 'Profile'   },
 ]
@@ -22,11 +21,8 @@ export default function Layout() {
   const { user }                      = useAuth()
   const navigate                      = useNavigate()
   const mainRef                       = useRef<HTMLDivElement>(null)
-  const longPressTimer                = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [scrolled, setScrolled]       = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-
-  const { isSubscribed, subscribe, unsubscribe } = usePushNotifications()
 
   const displayName = user?.username || user?.email?.split('@')[0] || 'there'
 
@@ -51,30 +47,17 @@ export default function Layout() {
     return () => clearInterval(interval)
   }, [])
 
-  const handleBellPressStart = () => {
-    longPressTimer.current = setTimeout(() => {
-      isSubscribed ? unsubscribe() : subscribe()
-    }, 600)
-  }
-
-  const handleBellPressEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }
-
-  const handleBellClick = () => {
-    navigate('/notifications')
-  }
-
   return (
     <div className="flex flex-col h-screen bg-gray-50">
 
       {/* Top header */}
       <header className={`bg-primary-600 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 transition-shadow duration-300 ${scrolled ? 'shadow-xl' : 'shadow-sm'}`}>
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🥗</span>
+          <img
+            src="/logo-icon.png"
+            alt="Diet and Recipe"
+            style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }}
+          />
           <div>
             <span className="font-extrabold text-base leading-none">Diet & Recipe</span>
             <p className="text-primary-200 text-[10px] leading-none mt-0.5">
@@ -87,14 +70,9 @@ export default function Layout() {
         <div className="relative">
           <button
             className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors active:scale-95"
-            onClick={handleBellClick}
-            onMouseDown={handleBellPressStart}
-            onMouseUp={handleBellPressEnd}
-            onMouseLeave={handleBellPressEnd}
-            onTouchStart={handleBellPressStart}
-            onTouchEnd={handleBellPressEnd}
+            onClick={() => navigate('/notifications')}
           >
-            <span className="text-lg">{isSubscribed ? '🔔' : '🔕'}</span>
+            <span className="text-lg">🔔</span>
           </button>
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-primary-600 flex items-center justify-center">
@@ -107,10 +85,7 @@ export default function Layout() {
       </header>
 
       {/* Page content */}
-      <main
-        ref={mainRef}
-        className="flex-1 overflow-y-auto pb-24"
-      >
+      <main ref={mainRef} className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
 

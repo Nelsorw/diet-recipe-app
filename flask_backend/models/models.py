@@ -179,19 +179,3 @@ class Notification(db.Model):
             'is_read'   : self.is_read,
             'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         }
-
-class PushSubscription(db.Model):
-    __tablename__ = 'push_subscriptions'
-
-    id           = db.Column(db.Integer, primary_key=True)
-    user_id      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    endpoint     = db.Column(db.Text, nullable=False)
-    p256dh       = db.Column(db.Text, nullable=False)
-    auth         = db.Column(db.Text, nullable=False)
-    created_at   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    def to_dict(self):
-        return {
-            'id'      : self.id,
-            'endpoint': self.endpoint
-        }

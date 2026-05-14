@@ -2,12 +2,6 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta, date, timezone
 import os
-import json
-from pywebpush import webpush, WebPushException
-
-VAPID_PRIVATE_KEY  = os.getenv('VAPID_PRIVATE_KEY', '').replace('\\n', '\n')
-VAPID_PUBLIC_KEY   = os.getenv('VAPID_PUBLIC_KEY', '')
-VAPID_CLAIMS_EMAIL = os.getenv('VAPID_CLAIMS_EMAIL', 'mailto:admin@nutriguide.com')
 
 notifications_bp = Blueprint('notifications', __name__)
 
@@ -25,29 +19,12 @@ MEAL_REMINDER_TIMES = {
 }
 
 
-def send_push_to_user(user_id: int, title: str, body: str):
-    from models.models import PushSubscription
-    subs = PushSubscription.query.filter_by(user_id=user_id).all()
-    for sub in subs:
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys"    : { "p256dh": sub.p256dh, "auth": sub.auth }
-                },
-                data=json.dumps({ "title": title, "body": body }),
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
-            )
-        except WebPushException:
-            from app import db
-            db.session.delete(sub)
-            db.session.commit()
-
-
-def create_notification(user_id: int, title: str, body: str, type: str):
+def create_notification(user_id: int, title: str, body: str, type: str, extra_data: dict = None):
     from app import db
-    from models.models import Notification
+    from models.models import Notification, User
+    from utils.email_sender import send_notification_email
+
+    user  = User.query.get(user_id)
     notif = Notification(
         user_id = user_id,
         title   = title,
@@ -56,7 +33,19 @@ def create_notification(user_id: int, title: str, body: str, type: str):
     )
     db.session.add(notif)
     db.session.commit()
-    send_push_to_user(user_id, title, body)
+
+    # send email
+    if user and user.email:
+        username = user.username or user.email.split('@')[0]
+        send_notification_email(
+            user_email = user.email,
+            username   = username,
+            notif_type = type,
+            title      = title,
+            body       = body,
+            extra_data = extra_data or {}
+        )
+
     return notif
 
 
@@ -91,7 +80,14 @@ def generate_meal_reminders(user_id: int):
             f"🌾 Carbs: {round(plan.carbs, 1)}g\n"
             f"🧈 Fat: {round(plan.fat, 1)}g"
         )
-        create_notification(user_id, title, body, 'meal_reminder')
+        create_notification(user_id, title, body, 'meal_reminder', extra_data={
+            'meal_type'   : meal_type,
+            'recipe_name' : plan.recipe_name,
+            'calories'    : plan.calories,
+            'protein'     : plan.protein,
+            'carbs'       : plan.carbs,
+            'fat'         : plan.fat,
+        })
 
 
 def check_streak_milestone(user_id: int):
@@ -110,7 +106,6 @@ def check_streak_milestone(user_id: int):
         7  : ("🔥 7-Day Streak!",  "One full week of consistent logging! You're building a great habit."),
         30 : ("🏆 30-Day Streak!", "Incredible! 30 days of consistent meal logging. You're a NutriGuide champion!"),
     }
-
     if streak in milestones:
         title, body = milestones[streak]
         existing = Notification.query.filter(
@@ -162,13 +157,14 @@ def check_perfect_day(user_id: int):
         if not existing:
             create_notification(
                 user_id,
-                "🏆 Perfect Day!",
+                "Perfect Day!",
                 f"You've hit all your nutrition targets today!\n"
-                f"🔥 {round(consumed['calories'])} kcal\n"
-                f"💪 {round(consumed['protein'], 1)}g protein\n"
-                f"🌾 {round(consumed['carbs'], 1)}g carbs\n"
-                f"🧈 {round(consumed['fat'], 1)}g fat",
-                'perfect_day'
+                f"Calories: {round(consumed['calories'])} kcal\n"
+                f"Protein: {round(consumed['protein'], 1)}g\n"
+                f"Carbs: {round(consumed['carbs'], 1)}g\n"
+                f"Fat: {round(consumed['fat'], 1)}g",
+                'perfect_day',
+                extra_data={'consumed': consumed}
             )
 
 
@@ -190,7 +186,7 @@ def send_log_reminder(user_id: int):
 
     create_notification(
         user_id,
-        "✏️ Don't forget to log your meals!",
+        "Don't forget to log your meals!",
         "You haven't logged any meals today. Keep your streak going and track what you eat!",
         'log_reminder'
     )
@@ -204,80 +200,28 @@ def get_notifications():
 
     user_id = int(get_jwt_identity())
 
-    # delete old notifications safely
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff       = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff_naive = cutoff.replace(tzinfo=None)
         Notification.query.filter(
             Notification.user_id    == user_id,
-            Notification.created_at <  cutoff
+            Notification.created_at <  cutoff_naive
         ).delete(synchronize_session=False)
         db.session.commit()
     except Exception:
         db.session.rollback()
 
-    notifications = Notification.query.filter_by(user_id=user_id)\
-        .order_by(Notification.created_at.desc()).all()
-
-    unread_count = sum(1 for n in notifications if not n.is_read)
-
-    return jsonify({
-        'notifications': [n.to_dict() for n in notifications],
-        'unread_count' : unread_count
-    }), 200
-
-
-@notifications_bp.route('/vapid-public-key', methods=['GET'])
-def get_vapid_public_key():
-    return jsonify({'public_key': VAPID_PUBLIC_KEY}), 200
-
-
-@notifications_bp.route('/subscribe', methods=['POST'])
-@jwt_required()
-def subscribe_push():
-    from app import db
-    from models.models import PushSubscription
-    user_id  = int(get_jwt_identity())
-    data     = request.get_json()
-    endpoint = data.get('endpoint')
-    p256dh   = data.get('keys', {}).get('p256dh')
-    auth     = data.get('keys', {}).get('auth')
-
-    if not endpoint or not p256dh or not auth:
-        return jsonify({'error': 'Invalid subscription data.'}), 400
-
-    existing = PushSubscription.query.filter_by(
-        user_id  = user_id,
-        endpoint = endpoint
-    ).first()
-
-    if not existing:
-        sub = PushSubscription(
-            user_id  = user_id,
-            endpoint = endpoint,
-            p256dh   = p256dh,
-            auth     = auth
-        )
-        db.session.add(sub)
-        db.session.commit()
-
-    return jsonify({'message': 'Subscribed successfully.'}), 201
-
-
-@notifications_bp.route('/unsubscribe', methods=['POST'])
-@jwt_required()
-def unsubscribe_push():
-    from app import db
-    from models.models import PushSubscription
-    user_id  = int(get_jwt_identity())
-    data     = request.get_json()
-    endpoint = data.get('endpoint')
-
-    PushSubscription.query.filter_by(
-        user_id  = user_id,
-        endpoint = endpoint
-    ).delete()
-    db.session.commit()
-    return jsonify({'message': 'Unsubscribed.'}), 200
+    try:
+        notifications = Notification.query.filter_by(user_id=user_id)\
+            .order_by(Notification.created_at.desc()).all()
+        unread_count = sum(1 for n in notifications if not n.is_read)
+        return jsonify({
+            'notifications': [n.to_dict() for n in notifications],
+            'unread_count' : unread_count
+        }), 200
+    except Exception:
+        db.session.rollback()
+        return jsonify({'notifications': [], 'unread_count': 0}), 200
 
 
 @notifications_bp.route('/<int:notif_id>/read', methods=['PUT'])
@@ -311,8 +255,26 @@ def notify_meal_plan_generated():
     user_id = int(get_jwt_identity())
     create_notification(
         user_id,
-        "📅 Weekly Meal Plan Ready!",
+        "Weekly Meal Plan Ready!",
         "Your personalized weekly meal plan has been generated. Check it out and start cooking!",
         'meal_plan'
     )
     return jsonify({'message': 'Notification created.'}), 201
+
+
+@notifications_bp.route('/test', methods=['POST'])
+@jwt_required()
+def test_notifications():
+    user_id  = int(get_jwt_identity())
+    notif_type = request.get_json().get('type', 'all')
+
+    if notif_type in ('meal_reminder', 'all'):
+        generate_meal_reminders(user_id)
+    if notif_type in ('log_reminder', 'all'):
+        send_log_reminder(user_id)
+    if notif_type in ('streak', 'all'):
+        check_streak_milestone(user_id)
+    if notif_type in ('perfect_day', 'all'):
+        check_perfect_day(user_id)
+
+    return jsonify({'message': f'Test notifications triggered: {notif_type}'}), 200
