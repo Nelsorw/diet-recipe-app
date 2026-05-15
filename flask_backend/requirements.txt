@@ -9,3 +9,4 @@ pandas
 numpy
 joblib
 python-dotenv
+flask-mail

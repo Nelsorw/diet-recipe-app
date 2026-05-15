@@ -7,7 +7,7 @@ interface AuthContextType {
   token: string | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
+  register: (username: string, email: string) => Promise<void>  
   logout: () => Promise<void>
 }
 
@@ -38,20 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/profile', { replace: true })
   }
 
-  const register = async (email: string, username: string, password: string) => {
-    const res = await apiRegister(email, username, password)
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
-    setToken(res.data.token)
-    setUser(res.data.user)
-    navigate('/profile', { replace: true })
-  }
+const register = async (username: string, email: string) => {
+  const res = await apiRegister(username, email)
+  localStorage.setItem('token', res.data.token)
+  localStorage.setItem('user', JSON.stringify(res.data.user))
+  setToken(res.data.token)
+  setUser(res.data.user)
+  // Don't navigate — let Register page show success screen
+}
 
   const logout = async () => {
     try { await apiLogout() } catch (_) {}
-    // keep recommendations cache — persists across sessions
-    // keep push subscription — device level, persists across sessions
-    // only clear session data
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setToken(null)

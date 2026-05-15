@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { getProfile, createProfile, updateProfile, uploadProfileImage, updateProfileImage } from '../services/api'
+import { getProfile, createProfile, updateProfile, uploadProfileImage, updateProfileImage, changePassword } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+
 
 const ACTIVITY_LEVELS   = ['low', 'moderate', 'high']
 const HEALTH_GOALS      = ['weight_loss', 'weight_gain', 'healthy_living']
@@ -74,6 +75,59 @@ function AlertModal({ title, message, isError, onClose }: any) {
         <button onClick={onClose} className={`w-full font-bold py-2.5 rounded-xl text-white text-sm ${isError ? 'bg-red-500 hover:bg-red-600' : 'bg-primary-600 hover:bg-primary-700'} transition-colors`}>OK</button>
       </div>
     </div>
+  )
+}
+
+function ChangePasswordForm() {
+  const [form, setForm]     = useState({ current: '', newPass: '', confirm: '' })
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg]       = useState<any>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.current || !form.newPass || !form.confirm) { setMsg({ error: true, text: 'All fields required.' }); return }
+    if (form.newPass !== form.confirm) { setMsg({ error: true, text: 'Passwords do not match.' }); return }
+    if (form.newPass.length < 6) { setMsg({ error: true, text: 'Password must be at least 6 characters.' }); return }
+    setLoading(true); setMsg(null)
+    try {
+      await changePassword(form.current, form.newPass)
+      setMsg({ error: false, text: 'Password changed successfully.' })
+      setForm({ current: '', newPass: '', confirm: '' })
+    } catch (err: any) {
+      setMsg({ error: true, text: err.response?.data?.error || 'Failed to change password.' })
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {msg && (
+        <div className={`text-xs px-3 py-2 rounded-lg ${msg.error ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+          {msg.text}
+        </div>
+      )}
+      {[
+        { key: 'current', label: 'Current Password',  placeholder: 'Enter current password' },
+        { key: 'newPass', label: 'New Password',       placeholder: 'Enter new password' },
+        { key: 'confirm', label: 'Confirm Password',   placeholder: 'Confirm new password' },
+      ].map(f => (
+        <div key={f.key}>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{f.label}</label>
+          <input
+            type="password"
+            value={(form as any)[f.key]}
+            onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+            placeholder={f.placeholder}
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+          />
+        </div>
+      ))}
+      <button
+        type="submit" disabled={loading}
+        className="w-full bg-gray-800 hover:bg-gray-900 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition-colors"
+      >
+        {loading ? 'Changing...' : 'Change Password'}
+      </button>
+    </form>
   )
 }
 
@@ -294,6 +348,11 @@ export default function Profile() {
         >
           Logout
         </button>
+        {/* Change Password */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h2 className="font-bold text-gray-800 text-sm mb-4">🔐 Change Password</h2>
+          <ChangePasswordForm />
+        </div>
       </div>
     </div>
   )

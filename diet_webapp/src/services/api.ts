@@ -11,8 +11,11 @@ api.interceptors.request.use(config => {
 })
 
 // Auth
-export const register = (email: string, username: string, password: string) =>
-  api.post('/auth/register', { email, username, password })
+export const register = (username: string, email: string) =>
+  api.post('/auth/register', { username, email })
+
+export const changePassword = (current_password: string, new_password: string) =>
+  api.post('/auth/change-password', { current_password, new_password })
 
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password })
@@ -65,4 +68,3 @@ export const addRecipeToMealPlan = (data: { recipe_id: number; plan_date: string
 export const getNotifications  = ()              => api.get('/notifications')
 export const markNotifRead     = (id: number)    => api.put(`/notifications/${id}/read`)
 export const markAllNotifsRead = ()              => api.put('/notifications/read-all')
-

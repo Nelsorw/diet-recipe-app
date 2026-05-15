@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getNotifications, markNotifRead, markAllNotifsRead } from '../services/api'
-import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const TYPE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
   meal_reminder : { bar: 'bg-emerald-500', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
@@ -47,17 +46,12 @@ function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void
           : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
       }`}
     >
-      {/* left color bar */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${notif.is_read ? 'bg-gray-200' : colors.bar}`} />
-
-      {/* type badge */}
       <div className="flex-shrink-0 pt-0.5">
         <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${colors.bg} ${colors.text}`}>
           {label}
         </span>
       </div>
-
-      {/* content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className={`text-sm font-bold leading-snug ${notif.is_read ? 'text-gray-400' : 'text-gray-800'}`}>
@@ -71,8 +65,6 @@ function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void
           {notif.body}
         </p>
       </div>
-
-      {/* unread dot */}
       {!notif.is_read && (
         <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${colors.bar}`} />
       )}
@@ -85,8 +77,6 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading]             = useState(true)
   const [markingAll, setMarkingAll]       = useState(false)
-
-  const { isSupported, isSubscribed, loading: pushLoading, subscribe, unsubscribe } = usePushNotifications()
 
   const fetchNotifications = async () => {
     try {
@@ -149,35 +139,6 @@ export default function Notifications() {
       </div>
 
       <div className="p-4 space-y-3">
-
-        {/* Push notification toggle */}
-        {isSupported && (
-          <div className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-gray-800">
-                Push Notifications
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {isSubscribed
-                  ? 'Receive alerts even when the app is closed'
-                  : 'Enable to receive alerts when app is closed'}
-              </p>
-            </div>
-            <button
-              onClick={isSubscribed ? unsubscribe : subscribe}
-              disabled={pushLoading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                isSubscribed ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                isSubscribed ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-        )}
-
-        {/* Notifications list */}
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />

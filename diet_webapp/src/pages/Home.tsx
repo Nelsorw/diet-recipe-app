@@ -26,19 +26,19 @@ export default function Home() {
     try {
       const res  = await getRecommendations({ top_n: 50 })
       const data = res.data.recommendations || []
-      setAllRecipes(data)
-      setTargets(res.data.user_targets)
-      localStorage.setItem(CACHE_KEY,    JSON.stringify(data))
-      localStorage.setItem(CACHE_TARGET, JSON.stringify(res.data.user_targets))
+      if (data.length > 0) {  // only cache if we got actual results
+        setAllRecipes(data)
+        setTargets(res.data.user_targets)
+        localStorage.setItem(CACHE_KEY,    JSON.stringify(data))
+        localStorage.setItem(CACHE_TARGET, JSON.stringify(res.data.user_targets))
+      }
     } catch (err: any) {
+      // don't overwrite cache on error
       console.error(err)
     } finally { setLoading(false) }
   }
 
 useEffect(() => {
-  console.log('user?.id:', user?.id)
-  console.log('cache key:', user?.id ? `cached_recommendations_${user.id}` : 'none')
-  console.log('cached value:', user?.id ? localStorage.getItem(`cached_recommendations_${user.id}`) : 'none')
   if (!user?.id) return
   const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id)
   const cached        = localStorage.getItem(CACHE_KEY)

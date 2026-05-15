@@ -49,7 +49,7 @@ def create_app():
         if isinstance(dbapi_connection, sqlite3.Connection):
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA journal_mode=WAL")
-            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.execute("PRAGMA busy_timeout=60000")
             cursor.close()
 
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
