@@ -6,8 +6,10 @@ interface AuthContextType {
   user: any
   token: string | null
   isLoading: boolean
+  hasProfile: boolean
+  setHasProfile: (val: boolean) => void
   login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string) => Promise<void>  
+  register: (email: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -17,14 +19,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]           = useState<any>(null)
   const [token, setToken]         = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasProfile, setHasProfile] = useState(false)
   const navigate                  = useNavigate()
 
   useEffect(() => {
     const stored     = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
+    const storedProfile = localStorage.getItem('has_profile')
     if (stored && storedUser) {
       setToken(stored)
       setUser(JSON.parse(storedUser))
+      setHasProfile(storedProfile === 'true')
     }
     setIsLoading(false)
   }, [])
@@ -35,29 +40,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('user', JSON.stringify(res.data.user))
     setToken(res.data.token)
     setUser(res.data.user)
-    navigate('/profile', { replace: true })
+
+    try {
+      const { getProfile } = await import('../services/api')
+      const profileRes = await getProfile()
+      if (profileRes.data?.profile) {
+        setHasProfile(true)
+        localStorage.setItem('has_profile', 'true')
+        navigate('/', { replace: true })
+      } else {
+        setHasProfile(false)
+        localStorage.setItem('has_profile', 'false')
+        navigate('/setup', { replace: true })
+      }
+    } catch {
+      setHasProfile(false)
+      localStorage.setItem('has_profile', 'false')
+      navigate('/setup', { replace: true })
+    }
   }
 
 const register = async (username: string, email: string) => {
   const res = await apiRegister(username, email)
-  localStorage.setItem('token', res.data.token)
-  localStorage.setItem('user', JSON.stringify(res.data.user))
-  setToken(res.data.token)
-  setUser(res.data.user)
-  // Don't navigate — let Register page show success screen
+  // localStorage.setItem('token', res.data.token)
+  // localStorage.setItem('user', JSON.stringify(res.data.user))
+  // setToken(res.data.token)
+  // setUser(res.data.user)
+    setHasProfile(false)
+    localStorage.setItem('has_profile', 'false')
+  // navigate('/setup', { replace: true })      // always setup after register
 }
 
   const logout = async () => {
     try { await apiLogout() } catch (_) {}
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('has_profile')
     setToken(null)
     setUser(null)
-    navigate('/login', { replace: true })
+    setHasProfile(false)
+    navigate('/Landing', { replace: true })
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, hasProfile, setHasProfile, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

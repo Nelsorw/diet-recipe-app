@@ -52,7 +52,9 @@ def create_notification(user_id: int, title: str, body: str, type: str, extra_da
 def generate_meal_reminders(user_id: int):
     from app import db
     from models.models import Notification, MealPlan
+    from datetime import datetime
     today = date.today()
+    now   = datetime.now()
     plans = MealPlan.query.filter_by(user_id=user_id, plan_date=today).all()
     if not plans:
         return
@@ -60,6 +62,16 @@ def generate_meal_reminders(user_id: int):
     for plan in plans:
         meal_type = plan.meal_type.lower()
         if meal_type not in MEAL_REMINDER_TIMES:
+            continue
+
+        reminder_hour = MEAL_REMINDER_TIMES[meal_type]
+
+        # only create reminder if we're within 1 hour after the scheduled time
+        # breakfast: runs at 6am, valid 6am-7am
+        # lunch: runs at 11am, valid 11am-12pm
+        # dinner: runs at 5pm, valid 5pm-6pm
+        scheduled_time = now.replace(hour=reminder_hour, minute=0, second=0, microsecond=0)
+        if not (scheduled_time <= now <= scheduled_time.replace(hour=reminder_hour + 1)):
             continue
 
         existing = Notification.query.filter(
@@ -260,21 +272,3 @@ def notify_meal_plan_generated():
         'meal_plan'
     )
     return jsonify({'message': 'Notification created.'}), 201
-
-
-@notifications_bp.route('/test', methods=['POST'])
-@jwt_required()
-def test_notifications():
-    user_id  = int(get_jwt_identity())
-    notif_type = request.get_json().get('type', 'all')
-
-    if notif_type in ('meal_reminder', 'all'):
-        generate_meal_reminders(user_id)
-    if notif_type in ('log_reminder', 'all'):
-        send_log_reminder(user_id)
-    if notif_type in ('streak', 'all'):
-        check_streak_milestone(user_id)
-    if notif_type in ('perfect_day', 'all'):
-        check_perfect_day(user_id)
-
-    return jsonify({'message': f'Test notifications triggered: {notif_type}'}), 200

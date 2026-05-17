@@ -1,26 +1,28 @@
 from app import db
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 
 class User(db.Model):
     __tablename__ = 'users'
 
-    id              = db.Column(db.Integer, primary_key=True)
-    email           = db.Column(db.String(120), unique=True, nullable=False)
-    username        = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash   = db.Column(db.String(255), nullable=False)
-    created_at      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    id                = db.Column(db.Integer, primary_key=True)
+    email             = db.Column(db.String(120), unique=True, nullable=False)
+    username          = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash     = db.Column(db.String(255), nullable=False)
+    active_profile_id = db.Column(db.Integer, nullable=True)
+    created_at        = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    profile         = db.relationship('UserProfile', backref='user', uselist=False, cascade='all, delete-orphan')
-    meal_logs       = db.relationship('MealLog', backref='user', lazy=True, cascade='all, delete-orphan')
-    meal_plans      = db.relationship('MealPlan', backref='user', lazy=True, cascade='all, delete-orphan')
+    profiles          = db.relationship('UserProfile', backref='user', lazy=True, cascade='all, delete-orphan')
+    meal_logs         = db.relationship('MealLog', backref='user', lazy=True, cascade='all, delete-orphan')
+    meal_plans        = db.relationship('MealPlan', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
-            'id'         : self.id,
-            'email'      : self.email,
-            'username'   : self.username,
-            'created_at' : self.created_at.isoformat()
+            'id'               : self.id,
+            'email'            : self.email,
+            'username'         : self.username,
+            'active_profile_id': self.active_profile_id,
+            'created_at'       : self.created_at.isoformat()
         }
 
 
@@ -29,9 +31,10 @@ class UserProfile(db.Model):
 
     id                    = db.Column(db.Integer, primary_key=True)
     user_id               = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_name          = db.Column(db.String(120), default='My Profile')
     profile_image_url     = db.Column(db.String(500), nullable=True)
     full_name             = db.Column(db.String(120))
-    age                   = db.Column(db.Integer, nullable=False)
+    date_of_birth         = db.Column(db.Date, nullable=True)
     gender                = db.Column(db.String(10), nullable=False)
     weight_kg             = db.Column(db.Float, nullable=False)
     height_cm             = db.Column(db.Float, nullable=False)
@@ -41,10 +44,22 @@ class UserProfile(db.Model):
     dietary_restrictions  = db.Column(db.String(50), nullable=False)
     updated_at            = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    @property
+    def age(self):
+        if self.date_of_birth:
+            today = date.today()
+            return today.year - self.date_of_birth.year - (
+                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+            )
+        return None
+
     def to_dict(self):
         return {
+            'id'                   : self.id,
+            'profile_name'         : self.profile_name,
             'profile_image_url'    : self.profile_image_url,
             'full_name'            : self.full_name,
+            'date_of_birth'        : self.date_of_birth.isoformat() if self.date_of_birth else None,
             'age'                  : self.age,
             'gender'               : self.gender,
             'weight_kg'            : self.weight_kg,

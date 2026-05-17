@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.models import User, Recipe
 from utils.nutrition import get_user_targets
 from utils.recommender import get_recommendations
+from routes.profile import _get_active_profile
 from app import db
 import pandas as pd
 from random import randint
@@ -45,7 +46,6 @@ def get_image_for_recipe(recipe: Recipe) -> str:
             cleaned  = recipe.ingredients.replace("'", '"')
             ing_list = _json.loads(cleaned)
             if ing_list:
-                # use first 3 ingredients
                 top_ings     = ing_list[:3]
                 search_query = f"{recipe.name} {' '.join(top_ings)}"
         except Exception:
@@ -65,14 +65,15 @@ def get_image_for_recipe(recipe: Recipe) -> str:
 def recommend():
     user_id = int(get_jwt_identity())
     user    = User.query.get_or_404(user_id)
+    profile = _get_active_profile(user)
 
-    if not user.profile:
+    if not profile:
         return jsonify({'error': 'Please complete your profile first.'}), 400
 
     top_n     = request.args.get('top_n', 20, type=int)
     meal_type = request.args.get('meal_type', None)
 
-    targets  = get_user_targets(user.profile)
+    targets  = get_user_targets(profile)
     results  = []
     attempts = 0
     max_attempts = 5
@@ -104,7 +105,7 @@ def recommend():
             'dietary_attributes': r.dietary_attributes
         } for r in recipes])
 
-        batch_results = get_recommendations(recipes_df, user.profile, targets, top_n=top_n)
+        batch_results = get_recommendations(recipes_df, profile, targets, top_n=top_n)
         results.extend(batch_results)
         attempts += 1
 
@@ -118,13 +119,13 @@ def recommend():
 
     unique_results = unique_results[:top_n]
 
-    # Fetch and cache images for all recommended recipes
+    # Fetch and cache images
     recipe_map = {r.id: r for r in Recipe.query.filter(
         Recipe.id.in_([r['id'] for r in unique_results])
     ).all()}
 
     for r in unique_results:
-        recipe_obj    = recipe_map.get(r['id'])
+        recipe_obj     = recipe_map.get(r['id'])
         r['image_url'] = get_image_for_recipe(recipe_obj) if recipe_obj else ''
 
     db.session.commit()

@@ -7,7 +7,7 @@ const NAV = [
   { to: '/mealplan', icon: '📅', label: 'Meal Plan' },
   { to: '/log',      icon: '🍽', label: 'Diary'     },
   { to: '/progress', icon: '📊', label: 'Progress'  },
-  { to: '/profile',  icon: '👤', label: 'Profile'   },
+  { to: '/more',     icon: '☰',  label: 'More'      },
 ]
 
 function getGreeting() {

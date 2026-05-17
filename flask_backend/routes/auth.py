@@ -2,11 +2,14 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app import db, bcrypt
 from models.models import User
+from datetime import datetime, timedelta
 import random
 import string
 
 auth_bp = Blueprint('auth', __name__)
 
+# Store OTPs temporarily {email: {otp, expires_at}}
+otp_store: dict = {}
 
 def generate_password(length: int = 10) -> str:
     """Generate a secure readable password like Login$5530."""
@@ -23,7 +26,8 @@ def send_welcome_email(email: str, username: str, password: str) -> bool:
         from app import mail
 
         msg = Message(
-            subject    = '🎉 Welcome to AI-based Diet & Recipe Recommendation App',
+            subject    = f'Your Diet and Recipe account is ready, {username}!',
+            sender     = ('Diet and Recipe App', 'nelso.rw@gmail.com'),
             recipients = [email],
             html       = f"""
 <!DOCTYPE html>
@@ -93,6 +97,137 @@ def send_welcome_email(email: str, username: str, password: str) -> bool:
     except Exception as e:
         print(f'Email error: {e}')
         return False
+
+
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data  = request.get_json()
+    email = data.get('email', '').strip()
+
+    if not email:
+        return jsonify({'error': 'Email is required.'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Don't reveal if email exists or not
+        return jsonify({'message': 'If this email exists, an OTP has been sent.'}), 200
+
+    # Generate 6-digit OTP
+    otp        = str(random.randint(100000, 999999))
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    otp_store[email] = {'otp': otp, 'expires_at': expires_at}
+
+    # Send OTP email
+    try:
+        from flask_mail import Message
+        from app import mail
+
+        msg = Message(
+            subject    = '🔐 Your Password Reset OTP — Diet & Recipe App',
+            sender     = ('Diet and Recipe App', 'nelso.rw@gmail.com'),
+            recipients = [email],
+            html       = f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #f9fafb; margin: 0; padding: 0; }}
+    .container {{ max-width: 520px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
+    .header {{ background: #16a34a; padding: 32px 24px; text-align: center; }}
+    .header h1 {{ color: white; margin: 0; font-size: 22px; }}
+    .header p {{ color: #dcfce7; margin: 6px 0 0; font-size: 14px; }}
+    .body {{ padding: 28px 24px; text-align: center; }}
+    .otp {{ font-size: 48px; font-weight: 900; letter-spacing: 12px; color: #16a34a; margin: 24px 0; }}
+    .warning {{ background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #92400e; margin-top: 16px; text-align: left; }}
+    .footer {{ text-align: center; padding: 16px; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 Password Reset</h1>
+      <p>Diet & Recipe Recommendation App</p>
+    </div>
+    <div class="body">
+      <p style="color: #6b7280; font-size: 14px;">Hello <strong>{user.username}</strong>, use the OTP below to reset your password.</p>
+      <div class="otp">{otp}</div>
+      <p style="color: #9ca3af; font-size: 13px;">This OTP expires in <strong>10 minutes</strong>.</p>
+      <div class="warning">
+        ⚠️ If you did not request a password reset, please ignore this email.
+      </div>
+    </div>
+    <div class="footer">© 2026 Diet & Recipe Recommendation App</div>
+  </div>
+</body>
+</html>
+"""
+        )
+        mail.send(msg)
+        print(f'[OTP] {email} → {otp}')  # also print to terminal for demo
+    except Exception as e:
+        print(f'[OTP Email Error] {e}')
+        print(f'[OTP] {email} → {otp}')  # still show in terminal even if email fails
+
+    return jsonify({'message': 'If this email exists, an OTP has been sent.'}), 200
+
+
+@auth_bp.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    data  = request.get_json()
+    email = data.get('email', '').strip()
+    otp   = data.get('otp', '').strip()
+
+    if not email or not otp:
+        return jsonify({'error': 'Email and OTP are required.'}), 400
+
+    record = otp_store.get(email)
+    if not record:
+        return jsonify({'error': 'No OTP found. Please request a new one.'}), 400
+
+    if datetime.utcnow() > record['expires_at']:
+        del otp_store[email]
+        return jsonify({'error': 'OTP has expired. Please request a new one.'}), 400
+
+    if record['otp'] != otp:
+        return jsonify({'error': 'Invalid OTP. Please try again.'}), 400
+
+    # OTP valid — mark as verified
+    otp_store[email]['verified'] = True
+
+    return jsonify({'message': 'OTP verified successfully.'}), 200
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    data         = request.get_json()
+    email        = data.get('email', '').strip()
+    new_password = data.get('new_password', '')
+
+    if not email or not new_password:
+        return jsonify({'error': 'Email and new password are required.'}), 400
+
+    record = otp_store.get(email)
+    if not record or not record.get('verified'):
+        return jsonify({'error': 'Please verify your OTP first.'}), 400
+
+    if len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters.'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found.'}), 404
+
+    user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    db.session.commit()
+
+    # Clear OTP after successful reset
+    del otp_store[email]
+
+    return jsonify({'message': 'Password reset successfully. You can now log in.'}), 200
+
 
 
 @auth_bp.route('/register', methods=['POST'])

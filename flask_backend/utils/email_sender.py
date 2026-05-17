@@ -134,6 +134,7 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
 
         msg = Message(
             subject = title,
+            sender     = ('Diet and Recipe App', 'nelso.rw@gmail.com'),
             recipients = [user_email],
             html    = get_email_html(title, body_html)
         )

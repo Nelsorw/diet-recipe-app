@@ -9,7 +9,7 @@ from app import db
 from models.models import User, MealPlan, Recipe
 from utils.nutrition import get_user_targets
 from utils.recommender import get_recommendations
-from routes.notifications import create_notification, generate_meal_reminders
+from routes.notifications import create_notification
 
 mealplan_bp  = Blueprint('mealplan', __name__)
 MEAL_TYPES   = ['breakfast', 'lunch', 'dinner']
@@ -232,7 +232,7 @@ def generate_plan():
             'meal_plan'
         )
         # generate meal reminders for today
-        generate_meal_reminders(user_id)
+        # generate_meal_reminders(user_id)
 
         return jsonify({
             'mode'         : 'weekly',

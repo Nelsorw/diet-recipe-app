@@ -14,8 +14,8 @@ api.interceptors.request.use(config => {
 export const register = (username: string, email: string) =>
   api.post('/auth/register', { username, email })
 
-export const changePassword = (current_password: string, new_password: string) =>
-  api.post('/auth/change-password', { current_password, new_password })
+export const changePassword   = (current: string, newPass: string) =>
+  api.post('/auth/change-password', { current_password: current, new_password: newPass })
 
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password })
@@ -23,14 +23,16 @@ export const login = (email: string, password: string) =>
 export const logout = () => api.post('/auth/logout')
 
 
-export const updateProfileImage = (url: string) =>
-  api.put('/profile/image', { profile_image_url: url })
-
 
 // Profile
-export const getProfile    = ()       => api.get('/profile')
-export const createProfile = (d: any) => api.post('/profile', d)
-export const updateProfile = (d: any) => api.put('/profile', d)
+export const getProfile       = ()                   => api.get('/profile')
+export const getAllProfiles    = ()                   => api.get('/profile/all')
+export const createProfile    = (d: any)             => api.post('/profile', d)
+export const updateProfile    = (id: number, d: any) => api.put(`/profile/${id}`, d)
+export const switchProfile    = (id: number)         => api.post(`/profile/${id}/switch`)
+export const deleteProfile    = (id: number)         => api.delete(`/profile/${id}`)
+export const updateProfileImage = (url: string)      => api.put('/profile/image', { profile_image_url: url })
+
 
 // Upload
 export const uploadProfileImage = (file: File) => {
@@ -68,3 +70,13 @@ export const addRecipeToMealPlan = (data: { recipe_id: number; plan_date: string
 export const getNotifications  = ()              => api.get('/notifications')
 export const markNotifRead     = (id: number)    => api.put(`/notifications/${id}/read`)
 export const markAllNotifsRead = ()              => api.put('/notifications/read-all')
+
+
+export const forgotPassword  = (email: string) =>
+  api.post('/auth/forgot-password', { email })
+
+export const verifyOtp = (email: string, otp: string) =>
+  api.post('/auth/verify-otp', { email, otp })
+
+export const resetPassword = (email: string, new_password: string) =>
+  api.post('/auth/reset-password', { email, new_password })

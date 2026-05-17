@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, app, request, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
@@ -35,12 +35,13 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS']   = {
         'connect_args': {'timeout': 30}
     }
-    app.config['MAIL_SERVER']         = 'smtp.gmail.com'
-    app.config['MAIL_PORT']           = 587
+    app.config['MAIL_SERVER']         = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
+    app.config['MAIL_PORT']           = int(os.getenv('MAIL_PORT', 587))
     app.config['MAIL_USE_TLS']        = True
+    app.config['MAIL_USE_SSL']        = False
     app.config['MAIL_USERNAME']       = os.getenv('MAIL_USERNAME', '')
     app.config['MAIL_PASSWORD']       = os.getenv('MAIL_PASSWORD', '')
-    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
+    app.config['MAIL_DEFAULT_SENDER'] = ('Diet and Recipe App', os.getenv('MAIL_USERNAME', ''))
 
 
 
@@ -144,7 +145,7 @@ def create_app():
     # log reminder — only at 8am
     scheduler.add_job(run_log_reminder,      'cron',     hour=8,  minute=0, misfire_grace_time=3600, max_instances=1)
     # streak + perfect day — check hourly
-    scheduler.add_job(run_streak_and_perfect,'interval', hours=1,           misfire_grace_time=3600, max_instances=1)
+    scheduler.add_job(run_streak_and_perfect,'interval', hours=1, misfire_grace_time=3600, max_instances=1)
     scheduler.start()
 
     return app
