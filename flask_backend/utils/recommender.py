@@ -112,7 +112,7 @@ def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int =
         probs = _model.predict_proba(X)[:, 1]
 
     df['suitability_score'] = probs
-    df['suitable']          = (probs >= 0.1).astype(int)
+    df['suitable']          = (probs >= 0.5).astype(int)
 
     suitable = (
         df[df['suitable'] == 1]
