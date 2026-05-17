@@ -9,7 +9,7 @@ interface AuthContextType {
   hasProfile: boolean
   setHasProfile: (val: boolean) => void
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
+  register: (email: string, username: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -62,13 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 const register = async (username: string, email: string) => {
   const res = await apiRegister(username, email)
-  // localStorage.setItem('token', res.data.token)
-  // localStorage.setItem('user', JSON.stringify(res.data.user))
-  // setToken(res.data.token)
-  // setUser(res.data.user)
-    setHasProfile(false)
-    localStorage.setItem('has_profile', 'false')
-  // navigate('/setup', { replace: true })      // always setup after register
 }
 
   const logout = async () => {

@@ -5,51 +5,52 @@ import RecipeCard from '../components/RecipeCard'
 
 const FILTERS = ['All', 'breakfast', 'lunch', 'dinner', 'snack']
 
-function getCacheKeys(userId: number) {
+function getCacheKeys(userId: number, profileId: number) {
   return {
-    recipes : `cached_recommendations_${userId}`,
-    targets : `cached_targets_${userId}`
+    recipes : `cached_recommendations_${userId}_${profileId}`,
+    targets : `cached_targets_${userId}_${profileId}`
   }
 }
 
 export default function Home() {
-  const { user }                        = useAuth()
-  const [allRecipes, setAllRecipes]     = useState<any[]>([])
-  const [targets, setTargets]           = useState<any>(null)
-  const [loading, setLoading]           = useState(false)
-  const [filter, setFilter]             = useState('All')
+  const { user }                    = useAuth()
+  const [allRecipes, setAllRecipes] = useState<any[]>([])
+  const [targets, setTargets]       = useState<any>(null)
+  const [loading, setLoading]       = useState(false)
+  const [filter, setFilter]         = useState('All')
+
+  const profileId = user?.active_profile_id || 0
 
   const fetchRecipes = async () => {
     if (!user?.id) return
-    const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id)
+    const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id, profileId)
     setLoading(true)
     try {
       const res  = await getRecommendations({ top_n: 50 })
       const data = res.data.recommendations || []
-      if (data.length > 0) {  // only cache if we got actual results
+      if (data.length > 0) {
         setAllRecipes(data)
         setTargets(res.data.user_targets)
         localStorage.setItem(CACHE_KEY,    JSON.stringify(data))
         localStorage.setItem(CACHE_TARGET, JSON.stringify(res.data.user_targets))
       }
     } catch (err: any) {
-      // don't overwrite cache on error
       console.error(err)
     } finally { setLoading(false) }
   }
 
-useEffect(() => {
-  if (!user?.id) return
-  const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id)
-  const cached        = localStorage.getItem(CACHE_KEY)
-  const cachedTargets = localStorage.getItem(CACHE_TARGET)
-  if (cached) {
-    setAllRecipes(JSON.parse(cached))
-    setTargets(cachedTargets ? JSON.parse(cachedTargets) : null)
-  } else {
-    fetchRecipes()
-  }
-}, [user?.id])
+  useEffect(() => {
+    if (!user?.id) return
+    const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id, profileId)
+    const cached        = localStorage.getItem(CACHE_KEY)
+    const cachedTargets = localStorage.getItem(CACHE_TARGET)
+    if (cached) {
+      setAllRecipes(JSON.parse(cached))
+      setTargets(cachedTargets ? JSON.parse(cachedTargets) : null)
+    } else {
+      fetchRecipes()
+    }
+  }, [user?.id, profileId])
 
   const recipes = filter === 'All'
     ? allRecipes

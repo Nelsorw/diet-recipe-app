@@ -82,25 +82,31 @@ export default function EditProfile() {
     } finally { setImageUploading(false) }
   }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.full_name || !form.date_of_birth || !form.weight_kg || !form.height_cm) {
-      setAlert({ isError: true, message: 'Please fill in all required fields.' })
-      return
-    }
-    if (!profileId) return
-    setSaving(true)
-    try {
-      await updateProfile(profileId, {
-        ...form,
-        weight_kg: Number(form.weight_kg),
-        height_cm: Number(form.height_cm),
-      })
-      setAlert({ isError: false, message: 'Profile updated successfully.' })
-    } catch (err: any) {
-      setAlert({ isError: true, message: err.response?.data?.error || 'Failed to save.' })
-    } finally { setSaving(false) }
+const handleSave = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!form.full_name || !form.date_of_birth || !form.weight_kg || !form.height_cm) {
+    setAlert({ isError: true, message: 'Please fill in all required fields.' })
+    return
   }
+  if (!profileId) return
+  setSaving(true)
+  try {
+    await updateProfile(profileId, {
+      ...form,
+      weight_kg: Number(form.weight_kg),
+      height_cm: Number(form.height_cm),
+    })
+    // clear cache for this profile so fresh recommendations load next time
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+    if (storedUser?.id && profileId) {
+      localStorage.removeItem(`cached_recommendations_${storedUser.id}_${profileId}`)
+      localStorage.removeItem(`cached_targets_${storedUser.id}_${profileId}`)
+    }
+    setAlert({ isError: false, message: 'Profile updated successfully.' })
+  } catch (err: any) {
+    setAlert({ isError: true, message: err.response?.data?.error || 'Failed to save.' })
+  } finally { setSaving(false) }
+}
 
   if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">

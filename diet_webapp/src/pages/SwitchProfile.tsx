@@ -23,22 +23,19 @@ export default function SwitchProfile() {
 
   useEffect(() => { fetchProfiles() }, [])
 
-  const handleSwitch = async (id: number) => {
-    if (id === activeId) return
-    setSwitching(id)
-    try {
-      await switchProfile(id)
-      setActiveId(id)
-      // clear recommendations cache so new profile gets fresh recommendations
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      if (user?.id) {
-        localStorage.removeItem(`cached_recommendations_${user.id}`)
-        localStorage.removeItem(`cached_targets_${user.id}`)
-      }
-      // full reload so all pages re-fetch with new active profile
-      window.location.href = '/'
-    } catch (_) {} finally { setSwitching(null) }
-  }
+const handleSwitch = async (id: number) => {
+  if (id === activeId) return
+  setSwitching(id)
+  try {
+    await switchProfile(id)
+    // update user in localStorage with new active_profile_id
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+    storedUser.active_profile_id = id
+    localStorage.setItem('user', JSON.stringify(storedUser))
+    // reload — cache will be per profile so correct data loads
+    window.location.href = '/'
+  } catch (_) {} finally { setSwitching(null) }
+}
 
 
   const handleDelete = async (id: number) => {
