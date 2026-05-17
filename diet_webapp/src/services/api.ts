@@ -57,9 +57,10 @@ export const getDailyMealPlan    = (date?: string) => api.get('/mealplan/daily',
 export const getWeeklyMealPlan   = ()              => api.get('/mealplan/weekly')
 
 // Logging
-export const logMeal      = (d: any)     => api.post('/log', d)
-export const getTodayLogs = ()           => api.get('/log/today')
-export const deleteLog    = (id: number) => api.delete(`/log/${id}`)
+export const logMeal        = (d: any)       => api.post('/log', d)
+export const getTodayLogs   = ()             => api.get('/log/today')
+export const getLogsByDate  = (date: string) => api.get('/log/by-date', { params: { date } })
+export const deleteLog      = (id: number)   => api.delete(`/log/${id}`)
 
 // Progress
 export const getProgress       = () => api.get('/progress')

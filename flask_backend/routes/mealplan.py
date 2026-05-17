@@ -18,6 +18,18 @@ TOLERANCE    = 0.25
 MAX_RETRIES  = 5
 
 
+def _get_active_profile(user):
+    """Return the user's active profile, falling back to their first profile."""
+    from models.models import UserProfile
+    if user.active_profile_id:
+        profile = UserProfile.query.filter_by(
+            id=user.active_profile_id, user_id=user.id
+        ).first()
+        if profile:
+            return profile
+    return UserProfile.query.filter_by(user_id=user.id).first()
+
+
 PEXELS_KEY = os.getenv('PEXELS_API_KEY', '')
 
 
@@ -85,6 +97,7 @@ def _get_recent_recipe_names(user_id, days=7):
 
 def _generate_day_plan(user, targets, plan_date, exclude_names=None):
     exclude_names = exclude_names or set()
+    profile = _get_active_profile(user)
 
     for attempt in range(MAX_RETRIES):
         day_meals  = []
@@ -100,7 +113,7 @@ def _generate_day_plan(user, targets, plan_date, exclude_names=None):
             if meal_df.empty:
                 meal_df, recipe_map = _get_sample_df(meal_type)
 
-            results = get_recommendations(meal_df, user.profile, targets, top_n=5)
+            results = get_recommendations(meal_df, profile, targets, top_n=5)
             if not results:
                 continue
 
@@ -175,11 +188,12 @@ def generate_plan():
     user_id = int(get_jwt_identity())
     user    = User.query.get_or_404(user_id)
 
-    if not user.profile:
+    profile = _get_active_profile(user)
+    if not profile:
         return jsonify({'error': 'Please complete your profile first.'}), 400
 
     mode    = request.args.get('mode', 'weekly')
-    targets = get_user_targets(user.profile)
+    targets = get_user_targets(profile)
     exclude_names = _get_recent_recipe_names(user_id, days=7)
 
     if mode == 'daily':
@@ -339,7 +353,7 @@ def regenerate_day():
     MealPlan.query.filter_by(user_id=user_id, plan_date=plan_date).delete()
     db.session.commit()
 
-    targets       = get_user_targets(user.profile)
+    targets       = get_user_targets(_get_active_profile(user))
     exclude_names = _get_recent_recipe_names(user_id, days=7)
     day_plan      = _generate_day_plan(user, targets, plan_date, exclude_names)
 

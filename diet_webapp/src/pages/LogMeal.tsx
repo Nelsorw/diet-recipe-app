@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getTodayLogs, deleteLog, getProfile } from '../services/api'
+import { getTodayLogs, deleteLog, getProfile, getLogsByDate } from '../services/api'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 const MEAL_ICONS: Record<string, string> = {
@@ -66,10 +66,7 @@ export default function LogMeal() {
     try {
       const dateStr = getDateByOffset(offset)
       const [logsRes, profileRes] = await Promise.all([
-        // reuse getTodayLogs but pass date param
-        fetch(`http://127.0.0.1:5000/log/by-date?date=${dateStr}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }).then(r => r.json()),
+        getLogsByDate(dateStr).then(r => r.data),
         getProfile()
       ])
       setLogs(logsRes.logs || [])
