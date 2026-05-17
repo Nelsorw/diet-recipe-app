@@ -137,18 +137,22 @@ def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int =
     if suitable.empty:
         suitable = df.sort_values('suitability_score', ascending=False).head(top_n)
 
-    # ── Normalize scores to 50–100% display range within this batch ─────
-    # Preserves relative ranking but keeps all badges in a reasonable range.
-    # Raw scores vary wildly by diet (0.007 for restricted vs 0.97 for Unrestricted)
-    # so we normalize within the batch then map to [0.5, 1.0] for display.
+    # ── Normalize scores to 50–97% display range, then shuffle ─────────
+    # - Top score maps to 93–97% (random, not always 100%)
+    # - Bottom score maps to 50%
+    # - Results are shuffled so high scores aren't always first
     scores = suitable['suitability_score'].values
     s_min, s_max = scores.min(), scores.max()
+    suitable = suitable.copy()
     if s_max > s_min:
-        suitable = suitable.copy()
-        normalized = (scores - s_min) / (s_max - s_min)   # 0.0 – 1.0
-        suitable['suitability_score'] = 0.5 + normalized * 0.5  # 0.5 – 1.0
+        normalized = (scores - s_min) / (s_max - s_min)          # 0.0 – 1.0
+        # top maps to a random value between 0.93 and 0.97
+        top_cap = 0.93 + np.random.uniform(0, 0.04)
+        suitable['suitability_score'] = 0.50 + normalized * (top_cap - 0.50)
     else:
-        suitable = suitable.copy()
-        suitable['suitability_score'] = 1.0
+        suitable['suitability_score'] = 0.93 + np.random.uniform(0, 0.04)
+
+    # shuffle so scores aren't visibly sorted highest-to-lowest
+    suitable = suitable.sample(frac=1, random_state=None).reset_index(drop=True)
 
     return suitable.to_dict(orient='records')

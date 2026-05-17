@@ -100,3 +100,9 @@ export const verifyOtp = (email: string, otp: string) =>
 
 export const resetPassword = (email: string, new_password: string) =>
   api.post('/auth/reset-password', { email, new_password })
+
+// Favorites
+export const getFavorites    = ()                  => api.get('/favorites')
+export const getSavedIds     = ()                  => api.get('/favorites/ids')
+export const saveRecipe      = (id: number)        => api.post(`/favorites/${id}`)
+export const unsaveRecipe    = (id: number)        => api.delete(`/favorites/${id}`)

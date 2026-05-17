@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getRecipeById, getDailyMealPlan, addRecipeToMealPlan, logMeal, getTodayLogs } from '../services/api'
+import { getRecipeById, getDailyMealPlan, addRecipeToMealPlan, logMeal, getTodayLogs, saveRecipe, unsaveRecipe, getSavedIds } from '../services/api'
 
 const MEAL_IMAGES: Record<string, string> = {
   breakfast : 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800',
@@ -151,6 +151,8 @@ export default function RecipeDetail() {
   const [isLogged, setIsLogged]           = useState(false)
   const [logging, setLogging]             = useState(false)
   const [logMessage, setLogMessage]       = useState<string | null>(null)
+  const [isSaved, setIsSaved]             = useState(false)
+  const [saving, setSaving]               = useState(false)
 
   const handleLogMeal = async () => {
     if (isLogged) return

@@ -75,6 +75,7 @@ def create_app():
     from routes.mealplan import mealplan_bp
     from routes.meal_log import logging_bp
     from routes.progress import progress_bp
+    from routes.favorites import favorites_bp
 
     app.register_blueprint(auth_bp,            url_prefix='/auth')
     app.register_blueprint(profile_bp,         url_prefix='/profile')
@@ -85,6 +86,7 @@ def create_app():
     app.register_blueprint(recipes_bp,         url_prefix='/recipes')
     app.register_blueprint(upload_bp,          url_prefix='/upload')
     app.register_blueprint(notifications_bp,   url_prefix='/notifications')
+    app.register_blueprint(favorites_bp,       url_prefix='/favorites')
 
     with app.app_context():
         db.create_all()
