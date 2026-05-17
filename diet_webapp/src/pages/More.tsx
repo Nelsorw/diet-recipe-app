@@ -1,56 +1,59 @@
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getProfile, getAllProfiles, switchProfile } from '../services/api'
 
 export default function More() {
-  const { user, logout }              = useAuth()
-  const navigate                      = useNavigate()
-  const [profile, setProfile]         = useState<any>(null)
-  const [profiles, setProfiles]       = useState<any[]>([])
-  const [showLogout, setShowLogout]   = useState(false)
-  const [isDragging, setIsDragging]   = useState(false)
-  const [imageUploading, setImageUploading] = useState(false)
-  const fileInputRef                  = useRef<HTMLInputElement>(null)
+  const { user, logout, refreshUser }     = useAuth()
+  const navigate                          = useNavigate()
+  const [profile, setProfile]             = useState<any>(null)
+  const [targets, setTargets]             = useState<any>(null)
+  const [showLogout, setShowLogout]       = useState(false)
 
   useEffect(() => {
     getProfile().then(res => {
       setProfile(res.data.profile)
+      setTargets(res.data.daily_targets || null)
     }).catch(() => {})
-    getAllProfiles().then(res => {
-      setProfiles(res.data.profiles || [])
-    }).catch(() => {})
-  }, [])
+  }, [user?.active_profile_id])
 
   const handleSwitch = async (id: number) => {
     try {
       await switchProfile(id)
-      window.location.href = '/'
+      const updatedUser = { ...user, active_profile_id: id }
+      refreshUser(updatedUser)
+      navigate('/', { replace: true })
     } catch (_) {}
+  }
+
+  const GOAL_LABELS: Record<string, string> = {
+    weight_loss   : 'Lose Weight',
+    weight_gain   : 'Gain Weight',
+    healthy_living: 'Stay Healthy',
+  }
+  const ACTIVITY_LABELS: Record<string, string> = {
+    low     : 'Sedentary',
+    moderate: 'Moderate',
+    high    : 'Very Active',
   }
 
   const MENU_ITEMS = [
     {
       group: 'Profile',
       items: [
-        { icon: '✏️', label: 'Edit Profile',      desc: 'Update your personal information',    action: () => navigate('/more/edit')     },
-        { icon: '👥', label: 'Switch Profile',     desc: 'Manage & switch between profiles',    action: () => navigate('/more/switch')   },
-        { icon: '➕', label: 'Add New Profile',    desc: 'Add a profile for a family member',   action: () => navigate('/setup')         },
+        { icon: '✏️', label: 'Edit Profile',   desc: 'Update your personal information',  action: () => navigate('/more/edit')     },
+        { icon: '👥', label: 'Switch Profile', desc: 'Manage & switch between profiles',  action: () => navigate('/more/switch')   },
+        { icon: '➕', label: 'Add Profile',    desc: 'Add a profile for a family member', action: () => navigate('/setup')         },
       ]
     },
     {
       group: 'Account',
       items: [
-        { icon: '🔐', label: 'Change Password',    desc: 'Update your account password',        action: () => navigate('/more/password') },
-        { icon: '🔔', label: 'Notifications',      desc: 'View your notifications',             action: () => navigate('/notifications') },
+        { icon: '🔐', label: 'Change Password', desc: 'Update your account password',   action: () => navigate('/more/password') },
+        { icon: '🔔', label: 'Notifications',   desc: 'View your notifications',        action: () => navigate('/notifications') },
+        { icon: '📊', label: 'Progress',        desc: 'View your nutrition progress',   action: () => navigate('/progress')     },
       ]
     },
-    {
-      group: 'Support',
-      items: [
-        { icon: '📊', label: 'My Progress',        desc: 'View your nutrition progress',        action: () => navigate('/progress')     },
-      ]
-    }
   ]
 
   return (
@@ -71,7 +74,8 @@ export default function More() {
 
       {/* Header */}
       <div className="bg-primary-600 px-4 pt-6 pb-16">
-        <h1 className="text-white text-xl font-bold">More</h1>
+        <h1 className="text-white text-xl font-bold">Account</h1>
+        <p className="text-primary-200 text-xs mt-0.5">Manage your profile and settings</p>
       </div>
 
       {/* Profile card */}
@@ -103,6 +107,55 @@ export default function More() {
       </div>
 
       <div className="px-4 space-y-4">
+
+        {/* Health summary card */}
+        {profile && targets && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Health Summary</p>
+              <div className="flex gap-2">
+                {profile.health_goal && (
+                  <span className="text-[10px] bg-primary-50 text-primary-700 font-bold px-2 py-0.5 rounded-full">
+                    {GOAL_LABELS[profile.health_goal] || profile.health_goal}
+                  </span>
+                )}
+                {profile.activity_level && (
+                  <span className="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">
+                    {ACTIVITY_LABELS[profile.activity_level] || profile.activity_level}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 divide-x divide-gray-50">
+              {[
+                { label: 'Calories', value: Math.round(targets.daily_calories || 0), unit: 'kcal', color: 'text-green-600'  },
+                { label: 'Protein',  value: Math.round(targets.protein_g      || 0), unit: 'g',    color: 'text-blue-600'   },
+                { label: 'Carbs',    value: Math.round(targets.carbs_g        || 0), unit: 'g',    color: 'text-yellow-600' },
+                { label: 'Fat',      value: Math.round(targets.fat_g          || 0), unit: 'g',    color: 'text-red-500'    },
+              ].map(n => (
+                <div key={n.label} className="px-3 py-3 text-center">
+                  <p className={`font-extrabold text-sm ${n.color}`}>
+                    {n.value}<span className="text-[9px] font-normal text-gray-400 ml-0.5">{n.unit}</span>
+                  </p>
+                  <p className="text-gray-400 text-[10px] mt-0.5">{n.label}</p>
+                </div>
+              ))}
+            </div>
+            {profile.health_condition && profile.health_condition !== 'No Specific Condition' && (
+              <div className="px-4 py-2.5 border-t border-gray-50 flex items-center gap-2">
+                <span className="text-xs text-gray-400">Health condition:</span>
+                <span className="text-xs font-semibold text-gray-600">{profile.health_condition}</span>
+              </div>
+            )}
+            {profile.dietary_restrictions && profile.dietary_restrictions !== 'Unrestricted' && (
+              <div className="px-4 py-2.5 border-t border-gray-50 flex items-center gap-2">
+                <span className="text-xs text-gray-400">Diet:</span>
+                <span className="text-xs font-semibold text-gray-600">{profile.dietary_restrictions}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {MENU_ITEMS.map(group => (
           <div key={group.group} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-3 pb-1">{group.group}</p>
@@ -135,7 +188,7 @@ export default function More() {
           </div>
         </button>
 
-        <p className="text-center text-xs text-gray-300 pb-4">Diet & Recipe App v1.0.0</p>
+        <p className="text-center text-xs text-gray-300 pb-4">NutriGuide v1.0.0</p>
       </div>
     </div>
   )

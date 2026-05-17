@@ -55,13 +55,18 @@ def create_notification(user_id: int, title: str, body: str, type: str,
 
     if user and user.email:
         username = user.username or user.email.split('@')[0]
+        # inject profile_name so the email greeting identifies which profile
+        from models.models import UserProfile
+        profile_obj  = UserProfile.query.get(profile_id) if profile_id else None
+        profile_name = profile_obj.profile_name if profile_obj else ''
+        merged_extra = {'profile_name': profile_name, **(extra_data or {})}
         send_notification_email(
             user_email = user.email,
             username   = username,
             notif_type = type,
             title      = title,
             body       = body,
-            extra_data = extra_data or {}
+            extra_data = merged_extra
         )
 
     return notif

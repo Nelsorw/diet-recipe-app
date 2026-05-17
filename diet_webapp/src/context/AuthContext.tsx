@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { login as apiLogin, register as apiRegister, logout as apiLogout } from '../services/api'
 import { useNavigate } from 'react-router-dom'
+
+const INACTIVITY_MS = 15 * 60 * 1000  // 15 minutes
 
 interface AuthContextType {
   user: any
@@ -17,15 +19,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]           = useState<any>(null)
-  const [token, setToken]         = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser]             = useState<any>(null)
+  const [token, setToken]           = useState<string | null>(null)
+  const [isLoading, setIsLoading]   = useState(true)
   const [hasProfile, setHasProfile] = useState(false)
-  const navigate                  = useNavigate()
+  const navigate                    = useNavigate()
+  const timerRef                    = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── Inactivity timeout ───────────────────────────────────────────────────
+  const clearSession = () => {
+    try { apiLogout() } catch (_) {}
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('has_profile')
+    setToken(null)
+    setUser(null)
+    setHasProfile(false)
+    navigate('/landing', { replace: true })
+  }
+
+  const resetTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(clearSession, INACTIVITY_MS)
+  }
 
   useEffect(() => {
-    const stored     = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
+    const stored      = localStorage.getItem('token')
+    const storedUser  = localStorage.getItem('user')
     const storedProfile = localStorage.getItem('has_profile')
     if (stored && storedUser) {
       setToken(stored)
@@ -35,7 +55,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  /** Call this after any operation that changes active_profile_id in localStorage */
+  // Start/stop inactivity timer based on login state
+  useEffect(() => {
+    if (!token) {
+      // not logged in — clear any running timer
+      if (timerRef.current) clearTimeout(timerRef.current)
+      return
+    }
+
+    const EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click']
+    EVENTS.forEach(e => window.addEventListener(e, resetTimer, { passive: true }))
+    resetTimer()  // start the timer immediately on login
+
+    return () => {
+      EVENTS.forEach(e => window.removeEventListener(e, resetTimer))
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [token])  // re-run when token changes (login / logout)
+
+  // ── Auth methods ─────────────────────────────────────────────────────────
   const refreshUser = (updatedUser: any) => {
     setUser(updatedUser)
     localStorage.setItem('user', JSON.stringify(updatedUser))
@@ -67,9 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-const register = async (username: string, email: string) => {
-  const res = await apiRegister(username, email)
-}
+  const register = async (username: string, email: string) => {
+    await apiRegister(username, email)
+  }
 
   const logout = async () => {
     try { await apiLogout() } catch (_) {}
@@ -79,7 +117,7 @@ const register = async (username: string, email: string) => {
     setToken(null)
     setUser(null)
     setHasProfile(false)
-    navigate('/Landing', { replace: true })
+    navigate('/landing', { replace: true })
   }
 
   return (

@@ -10,15 +10,20 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// On 401 (expired/invalid token) — clear session and redirect to login
+// On 401 (expired/invalid token) — clear session and redirect to landing
+// Only redirect if the user was actually logged in (has a stored token).
+// A 401 on the login endpoint itself is just a wrong password — don't redirect.
 api.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      localStorage.removeItem('has_profile')
-      window.location.href = '/login'
+      const hasToken = !!localStorage.getItem('token')
+      if (hasToken) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('has_profile')
+        window.location.href = '/landing'
+      }
     }
     return Promise.reject(err)
   }

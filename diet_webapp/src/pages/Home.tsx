@@ -3,7 +3,13 @@ import { getRecommendations } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import RecipeCard from '../components/RecipeCard'
 
-const FILTERS = ['All', 'breakfast', 'lunch', 'dinner', 'snack']
+const FILTERS = [
+  { key: 'All',       label: 'All',       icon: '✨' },
+  { key: 'breakfast', label: 'Breakfast', icon: '🌅' },
+  { key: 'lunch',     label: 'Lunch',     icon: '☀️' },
+  { key: 'dinner',    label: 'Dinner',    icon: '🌙' },
+  { key: 'snack',     label: 'Snack',     icon: '🍎' },
+]
 
 function getCacheKeys(userId: number, profileId: number) {
   return {
@@ -11,6 +17,8 @@ function getCacheKeys(userId: number, profileId: number) {
     targets : `cached_targets_${userId}_${profileId}`
   }
 }
+
+function round1(n: number) { return Math.round(n * 10) / 10 }
 
 export default function Home() {
   const { user }                    = useAuth()
@@ -58,52 +66,91 @@ export default function Home() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-primary-600 px-4 pt-6 pb-5">
-        <h1 className="text-white text-xl font-bold mb-1">🥗 Recommended Recipes</h1>
+
+      {/* ── Header ── */}
+      <div className="bg-primary-600 px-4 pt-6 pb-6">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h1 className="text-white text-xl font-extrabold leading-tight">
+              Recommended for You
+            </h1>
+            <p className="text-primary-200 text-xs mt-0.5">
+              Personalised to your health profile
+            </p>
+          </div>
+          <button
+            onClick={fetchRecipes}
+            disabled={loading}
+            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors border border-white/20"
+          >
+            <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Discover New
+          </button>
+        </div>
+
+        {/* Daily targets strip */}
         {targets && (
-          <p className="text-primary-100 text-xs">
-            Daily target: {targets.daily_calories} kcal • P: {targets.protein_g}g • C: {targets.carbs_g}g • F: {targets.fat_g}g
-          </p>
+          <div className="grid grid-cols-4 gap-2 mt-1">
+            {[
+              { label: 'Calories', value: `${round1(targets.daily_calories)}`, unit: 'kcal', color: 'bg-white/10' },
+              { label: 'Protein',  value: `${round1(targets.protein_g)}`,      unit: 'g',    color: 'bg-white/10' },
+              { label: 'Carbs',    value: `${round1(targets.carbs_g)}`,        unit: 'g',    color: 'bg-white/10' },
+              { label: 'Fat',      value: `${round1(targets.fat_g)}`,          unit: 'g',    color: 'bg-white/10' },
+            ].map(t => (
+              <div key={t.label} className={`${t.color} rounded-xl px-2 py-1.5 text-center`}>
+                <p className="text-white font-extrabold text-xs leading-none">
+                  {t.value}<span className="text-primary-200 text-[9px] ml-0.5">{t.unit}</span>
+                </p>
+                <p className="text-primary-300 text-[9px] mt-0.5">{t.label}</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex gap-2 overflow-x-auto no-scrollbar sticky top-0 z-10">
+      {/* ── Filter bar ── */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar sticky top-0 z-10 shadow-sm">
         {FILTERS.map(f => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors border ${
-              filter === f
-                ? 'bg-primary-600 text-white border-primary-600'
-                : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-primary-400'
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+              filter === f.key
+                ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-primary-300 hover:text-primary-600'
             }`}
           >
-            {f}
+            <span>{f.icon}</span>
+            {f.label}
           </button>
         ))}
-        <button
-          onClick={fetchRecipes}
-          className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors ml-auto"
-        >
-          🔄 Refresh
-        </button>
       </div>
 
+      {/* ── Recipe grid ── */}
       <div className="p-4">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-            <p className="text-gray-400 text-sm">Finding suitable recipes...</p>
+            <p className="text-gray-400 text-sm font-medium">Finding your best matches...</p>
           </div>
         ) : recipes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center py-24">
             <span className="text-5xl mb-3">🔍</span>
-            <p className="text-gray-400">No recipes found for this filter.</p>
+            <p className="text-gray-600 font-semibold mb-1">No recipes found</p>
+            <p className="text-gray-400 text-sm">Try a different filter or tap Discover New.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {recipes.map((r: any) => <RecipeCard key={r.id} recipe={r} />)}
-          </div>
+          <>
+            <p className="text-xs text-gray-400 font-medium mb-3">
+              {recipes.length} recipe{recipes.length !== 1 ? 's' : ''} matched
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {recipes.map((r: any) => <RecipeCard key={r.id} recipe={r} />)}
+            </div>
+          </>
         )}
       </div>
     </div>

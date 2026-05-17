@@ -112,7 +112,20 @@ def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int =
         probs = _model.predict_proba(X)[:, 1]
 
     df['suitability_score'] = probs
-    df['suitable']          = (probs >= 0.5).astype(int)
+
+    # Per-diet thresholds — the model was trained on heavily imbalanced data
+    # (222k Unrestricted vs 1-5k for each restricted diet), so restricted diets
+    # score in a completely different range (0.007–0.06 vs 0.96–0.98).
+    DIET_THRESHOLDS = {
+        'Unrestricted'    : 0.50,
+        'Gluten-Free'     : 0.01,
+        'Dairy-Free'      : 0.005,
+        'Egg-Free'        : 0.005,
+        'Dairy & Egg Free': 0.008,
+    }
+    threshold = DIET_THRESHOLDS.get(profile.dietary_restrictions, 0.01)
+
+    df['suitable'] = (probs >= threshold).astype(int)
 
     suitable = (
         df[df['suitable'] == 1]
@@ -120,8 +133,22 @@ def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int =
         .head(top_n)
     )
 
-    # fallback: if the threshold still yields nothing, return top_n by score
+    # final fallback: if still empty, return top_n by score regardless
     if suitable.empty:
         suitable = df.sort_values('suitability_score', ascending=False).head(top_n)
+
+    # ── Normalize scores to 50–100% display range within this batch ─────
+    # Preserves relative ranking but keeps all badges in a reasonable range.
+    # Raw scores vary wildly by diet (0.007 for restricted vs 0.97 for Unrestricted)
+    # so we normalize within the batch then map to [0.5, 1.0] for display.
+    scores = suitable['suitability_score'].values
+    s_min, s_max = scores.min(), scores.max()
+    if s_max > s_min:
+        suitable = suitable.copy()
+        normalized = (scores - s_min) / (s_max - s_min)   # 0.0 – 1.0
+        suitable['suitability_score'] = 0.5 + normalized * 0.5  # 0.5 – 1.0
+    else:
+        suitable = suitable.copy()
+        suitable['suitability_score'] = 1.0
 
     return suitable.to_dict(orient='records')

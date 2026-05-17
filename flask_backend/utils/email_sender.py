@@ -60,12 +60,15 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
     """Send email for a notification."""
     try:
         from app import mail
-        extra_data = extra_data or {}
+        extra_data   = extra_data or {}
+        profile_name = extra_data.get('profile_name', '')
+        # Show profile name in greeting when the account has multiple profiles
+        greeting_name = f"{username} ({profile_name})" if profile_name else username
 
         if notif_type == 'meal_reminder':
             body_html = f"""
             <div class="badge">Meal Reminder</div>
-            <p class="body-text">Hi <strong>{username}</strong>, your {extra_data.get('meal_type', 'meal')} is coming up in 2 hours!</p>
+            <p class="body-text">Hi <strong>{greeting_name}</strong>, your {extra_data.get('meal_type', 'meal')} is coming up in 2 hours!</p>
             <div class="meal-card">
               <div class="meal-type">{extra_data.get('meal_type', 'meal').capitalize()}</div>
               <div class="meal-name">{extra_data.get('recipe_name', '')}</div>
@@ -82,7 +85,7 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
         elif notif_type == 'log_reminder':
             body_html = f"""
             <div class="badge">Daily Reminder</div>
-            <p class="body-text">Hi <strong>{username}</strong>,</p>
+            <p class="body-text">Hi <strong>{greeting_name}</strong>,</p>
             <p class="body-text">You haven't logged any meals today. Tracking your meals helps you stay on top of your nutrition goals and maintain your streak!</p>
             <a href="http://localhost:3000" class="btn">Log a Meal Now</a>
             """
@@ -90,7 +93,7 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
         elif notif_type == 'streak':
             body_html = f"""
             <div class="badge">Streak Milestone</div>
-            <p class="body-text">Hi <strong>{username}</strong>,</p>
+            <p class="body-text">Hi <strong>{greeting_name}</strong>,</p>
             <p class="body-text">{body}</p>
             <a href="http://localhost:3000" class="btn">Keep it Going</a>
             """
@@ -99,7 +102,7 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
             consumed = extra_data.get('consumed', {})
             body_html = f"""
             <div class="badge">Achievement Unlocked</div>
-            <p class="body-text">Hi <strong>{username}</strong>, you hit all your nutrition targets today!</p>
+            <p class="body-text">Hi <strong>{greeting_name}</strong>, you hit all your nutrition targets today!</p>
             <div class="nutrition-grid">
               <div class="nutrition-card">
                 <div class="value">{round(consumed.get('calories', 0))}</div>
@@ -124,7 +127,7 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
         elif notif_type == 'meal_plan':
             body_html = f"""
             <div class="badge">Meal Plan Ready</div>
-            <p class="body-text">Hi <strong>{username}</strong>,</p>
+            <p class="body-text">Hi <strong>{greeting_name}</strong>,</p>
             <p class="body-text">Your personalized weekly meal plan has been generated based on your health profile and nutrition targets. Check it out and start planning your meals!</p>
             <a href="http://localhost:3000/mealplan" class="btn">View Meal Plan</a>
             """
@@ -133,10 +136,10 @@ def send_notification_email(user_email: str, username: str, notif_type: str, tit
             body_html = f'<p class="body-text">{body}</p>'
 
         msg = Message(
-            subject = title,
-            sender     = ('Diet and Recipe App', 'nelso.rw@gmail.com'),
+            subject    = title,
+            sender     = ('NutriGuide', 'nelso.rw@gmail.com'),
             recipients = [user_email],
-            html    = get_email_html(title, body_html)
+            html       = get_email_html(title, body_html)
         )
         mail.send(msg)
         print(f"[Email] Sent to {user_email}: {title}")
