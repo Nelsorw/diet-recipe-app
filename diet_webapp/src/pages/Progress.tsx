@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getProgress, getWeeklyProgress } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 
 type ChartMetric = 'calories' | 'protein' | 'carbs' | 'fat'
@@ -40,7 +41,11 @@ export default function Progress() {
   const [loading, setLoading]   = useState(true)
   const [metric, setMetric]     = useState<ChartMetric>('calories')
 
+  const { user } = useAuth()
+  const activeProfileId = user?.active_profile_id
+
   useEffect(() => {
+    setLoading(true)
     const fetchAll = async () => {
       try {
         const [p, w] = await Promise.all([getProgress(), getWeeklyProgress()])
@@ -49,7 +54,7 @@ export default function Progress() {
       } catch (_) {} finally { setLoading(false) }
     }
     fetchAll()
-  }, [])
+  }, [activeProfileId])
 
   if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">

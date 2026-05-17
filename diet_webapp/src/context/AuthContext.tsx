@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean
   hasProfile: boolean
   setHasProfile: (val: boolean) => void
+  refreshUser: (updatedUser: any) => void
   login: (email: string, password: string) => Promise<void>
   register: (email: string, username: string) => Promise<void>
   logout: () => Promise<void>
@@ -33,6 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(false)
   }, [])
+
+  /** Call this after any operation that changes active_profile_id in localStorage */
+  const refreshUser = (updatedUser: any) => {
+    setUser(updatedUser)
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+  }
 
   const login = async (email: string, password: string) => {
     const res = await apiLogin(email, password)
@@ -76,7 +83,7 @@ const register = async (username: string, email: string) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, hasProfile, setHasProfile, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, hasProfile, setHasProfile, refreshUser, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getNotifications, markNotifRead, markAllNotifsRead } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const TYPE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
   meal_reminder : { bar: 'bg-emerald-500', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
@@ -74,18 +75,21 @@ function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void
 
 export default function Notifications() {
   const navigate                          = useNavigate()
+  const { user }                          = useAuth()
+  const activeProfileId                   = user?.active_profile_id
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading]             = useState(true)
   const [markingAll, setMarkingAll]       = useState(false)
 
   const fetchNotifications = async () => {
+    setLoading(true)
     try {
       const res = await getNotifications()
       setNotifications(res.data.notifications || [])
     } catch (_) {} finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchNotifications() }, [])
+  useEffect(() => { fetchNotifications() }, [activeProfileId])
 
   const handleRead = async (id: number) => {
     try {

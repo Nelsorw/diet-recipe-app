@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 export default function SwitchProfile() {
   const navigate                      = useNavigate()
-  const { user }                      = useAuth()
+  const { user, refreshUser }         = useAuth()
   const [profiles, setProfiles]       = useState<any[]>([])
   const [activeId, setActiveId]       = useState<number | null>(null)
   const [loading, setLoading]         = useState(true)
@@ -23,19 +23,19 @@ export default function SwitchProfile() {
 
   useEffect(() => { fetchProfiles() }, [])
 
-const handleSwitch = async (id: number) => {
-  if (id === activeId) return
-  setSwitching(id)
-  try {
-    await switchProfile(id)
-    // update user in localStorage with new active_profile_id
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
-    storedUser.active_profile_id = id
-    localStorage.setItem('user', JSON.stringify(storedUser))
-    // reload — cache will be per profile so correct data loads
-    window.location.href = '/'
-  } catch (_) {} finally { setSwitching(null) }
-}
+  const handleSwitch = async (id: number) => {
+    if (id === activeId) return
+    setSwitching(id)
+    try {
+      await switchProfile(id)
+      // update user in context + localStorage with new active_profile_id
+      const updatedUser = { ...user, active_profile_id: id }
+      refreshUser(updatedUser)
+      setActiveId(id)
+      // navigate home — Home.tsx will see new profileId and load correct cached data
+      navigate('/', { replace: true })
+    } catch (_) {} finally { setSwitching(null) }
+  }
 
 
   const handleDelete = async (id: number) => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProfile, updateProfile, uploadProfileImage, updateProfileImage, getAllProfiles } from '../services/api'
+import { getProfile, updateProfile, uploadProfileImage, updateProfileImage } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const HEALTH_CONDITIONS = [
@@ -96,7 +96,7 @@ const handleSave = async (e: React.FormEvent) => {
       weight_kg: Number(form.weight_kg),
       height_cm: Number(form.height_cm),
     })
-    // clear cache for this profile so fresh recommendations load next time
+    // clear recommendation cache so fresh results load next time
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (storedUser?.id && profileId) {
       localStorage.removeItem(`cached_recommendations_${storedUser.id}_${profileId}`)

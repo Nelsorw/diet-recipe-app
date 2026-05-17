@@ -12,8 +12,8 @@ from random import randint
 
 recommendations_bp = Blueprint('recommendations', __name__)
 
-SAMPLE_SIZE  = 5000
-PEXELS_KEY   = os.getenv('PEXELS_API_KEY', '')
+SAMPLE_SIZE = 2000
+PEXELS_KEY  = os.getenv('PEXELS_API_KEY', '')
 
 
 def search_pexels(query: str) -> str | None:
@@ -73,68 +73,60 @@ def recommend():
     top_n     = request.args.get('top_n', 20, type=int)
     meal_type = request.args.get('meal_type', None)
 
-    targets  = get_user_targets(profile)
-    results  = []
-    attempts = 0
-    max_attempts = 5
+    targets = get_user_targets(profile)
 
-    while len(results) < top_n and attempts < max_attempts:
-        query = Recipe.query
-        if meal_type and meal_type.lower() != 'all':
-            query = query.filter(Recipe.meal_type.ilike(meal_type))
+    query = Recipe.query
+    if meal_type and meal_type.lower() != 'all':
+        query = query.filter(Recipe.meal_type.ilike(meal_type))
 
-        total  = query.count()
-        if total == 0:
-            break
+    total = query.count()
+    if total == 0:
+        return jsonify({'user_targets': targets, 'total_results': 0,
+                        'meal_type_filter': meal_type, 'recommendations': []}), 200
 
-        offset  = randint(0, max(0, total - SAMPLE_SIZE))
-        recipes = query.offset(offset).limit(SAMPLE_SIZE).all()
+    offset  = randint(0, max(0, total - SAMPLE_SIZE))
+    recipes = query.offset(offset).limit(SAMPLE_SIZE).all()
 
-        recipes_df = pd.DataFrame([{
-            'id'                : r.id,
-            'name'              : r.name,
-            'calories'          : r.calories,
-            'fat'               : r.fat,
-            'sugar'             : r.sugar,
-            'sodium'            : r.sodium,
-            'protein'           : r.protein,
-            'saturated_fat'     : r.saturated_fat,
-            'carbs'             : r.carbs,
-            'meal_type'         : r.meal_type,
-            'dish_type'         : r.dish_type,
-            'dietary_attributes': r.dietary_attributes
-        } for r in recipes])
+    recipes_df = pd.DataFrame([{
+        'id'                : r.id,
+        'name'              : r.name,
+        'calories'          : r.calories,
+        'fat'               : r.fat,
+        'sugar'             : r.sugar,
+        'sodium'            : r.sodium,
+        'protein'           : r.protein,
+        'saturated_fat'     : r.saturated_fat,
+        'carbs'             : r.carbs,
+        'meal_type'         : r.meal_type,
+        'dish_type'         : r.dish_type,
+        'dietary_attributes': r.dietary_attributes,
+        'image_url'         : r.image_url,
+    } for r in recipes])
 
-        batch_results = get_recommendations(recipes_df, profile, targets, top_n=top_n)
-        results.extend(batch_results)
-        attempts += 1
+    results = get_recommendations(recipes_df, profile, targets, top_n=top_n)
 
-    # Deduplicate by id
-    seen           = set()
-    unique_results = []
+    # attach cached images; fetch from Pexels only for recipes missing one
+    recipe_map = {r.id: r for r in recipes}
+
+    missing_recipes = []
     for r in results:
-        if r['id'] not in seen:
-            seen.add(r['id'])
-            unique_results.append(r)
+        obj = recipe_map.get(r['id'])
+        if obj and obj.image_url:
+            r['image_url'] = obj.image_url
+        else:
+            r['image_url'] = None
+            if obj:
+                missing_recipes.append((r, obj))
 
-    unique_results = unique_results[:top_n]
-
-    # Fetch and cache images
-    recipe_map = {r.id: r for r in Recipe.query.filter(
-        Recipe.id.in_([r['id'] for r in unique_results])
-    ).all()}
-
-    for r in unique_results:
-        recipe_obj     = recipe_map.get(r['id'])
-        r['image_url'] = get_image_for_recipe(recipe_obj) if recipe_obj else ''
-
-    db.session.commit()
-
-    print(f'Recommendations found: {len(unique_results)} after {attempts} attempts')
+    if missing_recipes and PEXELS_KEY:
+        for result_dict, recipe_obj in missing_recipes:
+            url = get_image_for_recipe(recipe_obj)
+            result_dict['image_url'] = url or None
+        db.session.commit()
 
     return jsonify({
         'user_targets'    : targets,
-        'total_results'   : len(unique_results),
+        'total_results'   : len(results),
         'meal_type_filter': meal_type,
-        'recommendations' : unique_results
+        'recommendations' : results
     }), 200

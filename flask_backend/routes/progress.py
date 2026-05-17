@@ -1,18 +1,29 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import date, timedelta
-from models.models import User, MealLog
+from models.models import User, MealLog, UserProfile
 from utils.nutrition import get_user_targets, generate_nutrition_tips
 
 progress_bp = Blueprint('progress', __name__)
 
 
-def _calc_streak(user_id: int) -> int:
+def _get_active_profile(user):
+    """Return the user's active profile, falling back to their first profile."""
+    if user.active_profile_id:
+        profile = UserProfile.query.filter_by(
+            id=user.active_profile_id, user_id=user.id
+        ).first()
+        if profile:
+            return profile
+    return UserProfile.query.filter_by(user_id=user.id).first()
+
+
+def _calc_streak(user_id: int, profile_id: int) -> int:
     """Count consecutive days with at least one meal logged ending today."""
     streak = 0
     check  = date.today()
     while True:
-        logs = MealLog.query.filter_by(user_id=user_id, log_date=check).first()
+        logs = MealLog.query.filter_by(user_id=user_id, profile_id=profile_id, log_date=check).first()
         if not logs:
             break
         streak += 1
@@ -37,15 +48,16 @@ def _perfect_day(consumed: dict, targets: dict) -> bool:
 @progress_bp.route('', methods=['GET'])
 @jwt_required()
 def get_progress():
-    user_id = int(get_jwt_identity())
-    user    = User.query.get_or_404(user_id)
+    user_id    = int(get_jwt_identity())
+    user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
 
-    if not user.profile:
+    if not profile:
         return jsonify({'error': 'Please complete your profile first.'}), 400
 
-    targets = get_user_targets(user.profile)
+    targets = get_user_targets(profile)
     today   = date.today()
-    logs    = MealLog.query.filter_by(user_id=user_id, log_date=today).all()
+    logs    = MealLog.query.filter_by(user_id=user_id, profile_id=profile.id, log_date=today).all()
 
     consumed = {
         'calories' : round(sum(l.calories for l in logs), 2),
@@ -56,7 +68,7 @@ def get_progress():
 
     pct_calories = round((consumed['calories'] / targets['daily_calories']) * 100, 1) if targets['daily_calories'] else 0
     tips         = generate_nutrition_tips(consumed, targets)
-    streak       = _calc_streak(user_id)
+    streak       = _calc_streak(user_id, profile.id)
     is_perfect   = _perfect_day(consumed, targets)
 
     # macros breakdown for donut (% of total calories from each macro)
@@ -88,18 +100,20 @@ def get_progress():
 def get_weekly_progress():
     user_id    = int(get_jwt_identity())
     user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
 
-    if not user.profile:
+    if not profile:
         return jsonify({'error': 'Please complete your profile first.'}), 400
 
-    targets    = get_user_targets(user.profile)
+    targets    = get_user_targets(profile)
     today      = date.today()
     start_date = today - timedelta(days=6)
 
     logs = MealLog.query.filter(
-        MealLog.user_id  == user_id,
-        MealLog.log_date >= start_date,
-        MealLog.log_date <= today
+        MealLog.user_id    == user_id,
+        MealLog.profile_id == profile.id,
+        MealLog.log_date   >= start_date,
+        MealLog.log_date   <= today
     ).all()
 
     daily_summary = {}

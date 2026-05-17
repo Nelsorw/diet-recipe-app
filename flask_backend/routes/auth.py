@@ -1,21 +1,18 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app import db, bcrypt
-from models.models import User
-from datetime import datetime, timedelta
+from models.models import User, OtpToken
+from datetime import datetime, timedelta, timezone
 import random
 import string
 
 auth_bp = Blueprint('auth', __name__)
 
-# Store OTPs temporarily {email: {otp, expires_at}}
-otp_store: dict = {}
 
 def generate_password(length: int = 10) -> str:
-    """Generate a secure readable password like Login$5530."""
-    prefix    = 'Login'
-    digits    = ''.join(random.choices(string.digits, k=4))
-    special   = random.choice('!@#$%&*')
+    prefix  = 'Login'
+    digits  = ''.join(random.choices(string.digits, k=4))
+    special = random.choice('!@#$%&*')
     return f"{prefix}{special}{digits}"
 
 
@@ -110,16 +107,19 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Don't reveal if email exists or not
         return jsonify({'message': 'If this email exists, an OTP has been sent.'}), 200
 
-    # Generate 6-digit OTP
+    # Delete any existing OTPs for this email
+    OtpToken.query.filter_by(email=email).delete()
+    db.session.commit()
+
     otp        = str(random.randint(100000, 999999))
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
-    otp_store[email] = {'otp': otp, 'expires_at': expires_at}
+    token = OtpToken(email=email, otp=otp, expires_at=expires_at)
+    db.session.add(token)
+    db.session.commit()
 
-    # Send OTP email
     try:
         from flask_mail import Message
         from app import mail
@@ -166,10 +166,10 @@ def forgot_password():
 """
         )
         mail.send(msg)
-        print(f'[OTP] {email} → {otp}')  # also print to terminal for demo
+        print(f'[OTP] {email} → {otp}')
     except Exception as e:
         print(f'[OTP Email Error] {e}')
-        print(f'[OTP] {email} → {otp}')  # still show in terminal even if email fails
+        print(f'[OTP] {email} → {otp}')
 
     return jsonify({'message': 'If this email exists, an OTP has been sent.'}), 200
 
@@ -183,19 +183,26 @@ def verify_otp():
     if not email or not otp:
         return jsonify({'error': 'Email and OTP are required.'}), 400
 
-    record = otp_store.get(email)
+    record = OtpToken.query.filter_by(email=email).order_by(OtpToken.created_at.desc()).first()
     if not record:
         return jsonify({'error': 'No OTP found. Please request a new one.'}), 400
 
-    if datetime.utcnow() > record['expires_at']:
-        del otp_store[email]
+    # Compare timezone-aware datetimes
+    now = datetime.now(timezone.utc)
+    expires = record.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+
+    if now > expires:
+        OtpToken.query.filter_by(email=email).delete()
+        db.session.commit()
         return jsonify({'error': 'OTP has expired. Please request a new one.'}), 400
 
-    if record['otp'] != otp:
+    if record.otp != otp:
         return jsonify({'error': 'Invalid OTP. Please try again.'}), 400
 
-    # OTP valid — mark as verified
-    otp_store[email]['verified'] = True
+    record.verified = True
+    db.session.commit()
 
     return jsonify({'message': 'OTP verified successfully.'}), 200
 
@@ -209,8 +216,8 @@ def reset_password():
     if not email or not new_password:
         return jsonify({'error': 'Email and new password are required.'}), 400
 
-    record = otp_store.get(email)
-    if not record or not record.get('verified'):
+    record = OtpToken.query.filter_by(email=email, verified=True).order_by(OtpToken.created_at.desc()).first()
+    if not record:
         return jsonify({'error': 'Please verify your OTP first.'}), 400
 
     if len(new_password) < 6:
@@ -221,10 +228,8 @@ def reset_password():
         return jsonify({'error': 'User not found.'}), 404
 
     user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    OtpToken.query.filter_by(email=email).delete()
     db.session.commit()
-
-    # Clear OTP after successful reset
-    del otp_store[email]
 
     return jsonify({'message': 'Password reset successfully. You can now log in.'}), 200
 

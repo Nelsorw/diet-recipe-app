@@ -23,8 +23,8 @@ const ACTIVITY_LEVELS = [
 ]
 
 export default function SetupProfile() {
-  const navigate    = useNavigate()
-  const { user }    = useAuth()
+  const navigate                        = useNavigate()
+  const { user, setHasProfile, refreshUser } = useAuth()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
@@ -44,21 +44,20 @@ export default function SetupProfile() {
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }))
 
-
-const { setHasProfile } = useAuth()
-
-const handleSubmit = async () => {
-  setSaving(true); setError('')
-  try {
-    await createProfile(form)
-    setHasProfile(true)
-    localStorage.setItem('has_profile', 'true')
-    navigate('/', { replace: true })
-  } catch (err: any) {
-    setError(err.response?.data?.error || 'Failed to save profile.')
-    setSaving(false)
+  const handleSubmit = async () => {
+    setSaving(true); setError('')
+    try {
+      const profileRes = await createProfile(form)
+      const updatedUser = profileRes.data?.user
+      if (updatedUser) refreshUser(updatedUser)
+      setHasProfile(true)
+      localStorage.setItem('has_profile', 'true')
+      navigate('/', { replace: true })
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to save profile.')
+      setSaving(false)
+    }
   }
-}
 
   const steps = [
     { label: 'Basic Info',  num: 1 },

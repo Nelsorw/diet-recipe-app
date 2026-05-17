@@ -13,9 +13,9 @@ from routes.notifications import create_notification
 
 mealplan_bp  = Blueprint('mealplan', __name__)
 MEAL_TYPES   = ['breakfast', 'lunch', 'dinner']
-SAMPLE_SIZE  = 1000
+SAMPLE_SIZE  = 500    # reduced from 1000 — faster per-meal sampling
 TOLERANCE    = 0.25
-MAX_RETRIES  = 5
+MAX_RETRIES  = 3      # reduced from 5 — 3 attempts is enough
 
 
 def _get_active_profile(user):
@@ -86,18 +86,18 @@ def _nutrition_ok(day_plan, targets):
     )
 
 
-def _get_recent_recipe_names(user_id, days=7):
+def _get_recent_recipe_names(user_id, profile_id, days=7):
     since = date.today() - timedelta(days=days)
     plans = MealPlan.query.filter(
-        MealPlan.user_id   == user_id,
-        MealPlan.plan_date >= since
+        MealPlan.user_id    == user_id,
+        MealPlan.profile_id == profile_id,
+        MealPlan.plan_date  >= since
     ).all()
     return set(p.recipe_name for p in plans)
 
 
-def _generate_day_plan(user, targets, plan_date, exclude_names=None):
+def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
     exclude_names = exclude_names or set()
-    profile = _get_active_profile(user)
 
     for attempt in range(MAX_RETRIES):
         day_meals  = []
@@ -129,6 +129,7 @@ def _generate_day_plan(user, targets, plan_date, exclude_names=None):
             for meal_type, top in zip(MEAL_TYPES, day_meals):
                 entry = MealPlan(
                     user_id     = user.id,
+                    profile_id  = profile.id,
                     recipe_id   = top.get('id'),
                     plan_date   = plan_date,
                     meal_type   = meal_type,
@@ -194,13 +195,13 @@ def generate_plan():
 
     mode    = request.args.get('mode', 'weekly')
     targets = get_user_targets(profile)
-    exclude_names = _get_recent_recipe_names(user_id, days=7)
+    exclude_names = _get_recent_recipe_names(user_id, profile.id, days=7)
 
     if mode == 'daily':
         plan_date = date.today()
-        MealPlan.query.filter_by(user_id=user_id, plan_date=plan_date).delete()
+        MealPlan.query.filter_by(user_id=user_id, profile_id=profile.id, plan_date=plan_date).delete()
         db.session.commit()
-        day_plan = _generate_day_plan(user, targets, plan_date, exclude_names)
+        day_plan = _generate_day_plan(user, profile, targets, plan_date, exclude_names)
         return jsonify({
             'mode'         : 'daily',
             'plan_date'    : plan_date.isoformat(),
@@ -217,16 +218,17 @@ def generate_plan():
     else:
         start_date = date.today()
         MealPlan.query.filter(
-            MealPlan.user_id   == user_id,
-            MealPlan.plan_date >= start_date,
-            MealPlan.plan_date <= start_date + timedelta(days=6)
+            MealPlan.user_id    == user_id,
+            MealPlan.profile_id == profile.id,
+            MealPlan.plan_date  >= start_date,
+            MealPlan.plan_date  <= start_date + timedelta(days=6)
         ).delete()
         db.session.commit()
 
         weekly_plan = {}
         for i in range(7):
             plan_date = start_date + timedelta(days=i)
-            day_plan  = _generate_day_plan(user, targets, plan_date, exclude_names)
+            day_plan  = _generate_day_plan(user, profile, targets, plan_date, exclude_names)
             weekly_plan[plan_date.isoformat()] = {
                 'meals'     : day_plan,
                 'day_totals': {
@@ -260,14 +262,19 @@ def generate_plan():
 @mealplan_bp.route('/daily', methods=['GET'])
 @jwt_required()
 def get_daily_plan():
-    user_id  = int(get_jwt_identity())
-    date_str = request.args.get('date', date.today().isoformat())
+    user_id    = int(get_jwt_identity())
+    user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
+    profile_id = profile.id if profile else None
+    date_str   = request.args.get('date', date.today().isoformat())
     try:
         plan_date = date.fromisoformat(date_str)
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD.'}), 400
 
-    plans = MealPlan.query.filter_by(user_id=user_id, plan_date=plan_date).all()
+    plans = MealPlan.query.filter_by(
+        user_id=user_id, profile_id=profile_id, plan_date=plan_date
+    ).all()
     if not plans:
         return jsonify({'message': 'No meal plan for this date.', 'meal_plan': []}), 200
 
@@ -280,10 +287,13 @@ def get_daily_plan():
 @mealplan_bp.route('/weekly', methods=['GET'])
 @jwt_required()
 def get_weekly_plan():
-    user_id = int(get_jwt_identity())
+    user_id    = int(get_jwt_identity())
+    user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
+    profile_id = profile.id if profile else None
 
-    # find the most recent plan date for this user
-    latest = MealPlan.query.filter_by(user_id=user_id)\
+    # find the most recent plan date for this user+profile
+    latest = MealPlan.query.filter_by(user_id=user_id, profile_id=profile_id)\
         .order_by(MealPlan.plan_date.desc()).first()
 
     if not latest:
@@ -293,14 +303,14 @@ def get_weekly_plan():
             'weekly_plan': {}
         }), 200
 
-    # use the week that contains the latest plan
     end_date   = latest.plan_date
     start_date = end_date - timedelta(days=6)
 
     plans = MealPlan.query.filter(
-        MealPlan.user_id   == user_id,
-        MealPlan.plan_date >= start_date,
-        MealPlan.plan_date <= end_date
+        MealPlan.user_id    == user_id,
+        MealPlan.profile_id == profile_id,
+        MealPlan.plan_date  >= start_date,
+        MealPlan.plan_date  <= end_date
     ).order_by(MealPlan.plan_date, MealPlan.meal_type).all()
 
     recipe_ids  = [p.recipe_id for p in plans if p.recipe_id]
@@ -343,6 +353,7 @@ def get_weekly_plan():
 def regenerate_day():
     user_id  = int(get_jwt_identity())
     user     = User.query.get_or_404(user_id)
+    profile  = _get_active_profile(user)
     date_str = request.args.get('date', date.today().isoformat())
 
     try:
@@ -350,12 +361,12 @@ def regenerate_day():
     except ValueError:
         return jsonify({'error': 'Invalid date format.'}), 400
 
-    MealPlan.query.filter_by(user_id=user_id, plan_date=plan_date).delete()
+    MealPlan.query.filter_by(user_id=user_id, profile_id=profile.id, plan_date=plan_date).delete()
     db.session.commit()
 
-    targets       = get_user_targets(_get_active_profile(user))
-    exclude_names = _get_recent_recipe_names(user_id, days=7)
-    day_plan      = _generate_day_plan(user, targets, plan_date, exclude_names)
+    targets       = get_user_targets(profile)
+    exclude_names = _get_recent_recipe_names(user_id, profile.id, days=7)
+    day_plan      = _generate_day_plan(user, profile, targets, plan_date, exclude_names)
 
     # enrich with image_url
     recipe_ids  = [m['recipe_id'] for m in day_plan if m.get('recipe_id')]
@@ -386,12 +397,15 @@ def regenerate_day():
 @mealplan_bp.route('/add-recipe', methods=['POST'])
 @jwt_required()
 def add_recipe():
-    user_id = int(get_jwt_identity())
-    data    = request.get_json()
+    user_id    = int(get_jwt_identity())
+    user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
+    profile_id = profile.id if profile else None
+    data       = request.get_json()
 
-    recipe_id = data.get('recipe_id')
+    recipe_id     = data.get('recipe_id')
     plan_date_str = data.get('plan_date')
-    replace   = data.get('replace', False)
+    replace       = data.get('replace', False)
 
     if not recipe_id or not plan_date_str:
         return jsonify({'error': 'recipe_id and plan_date are required.'}), 400
@@ -405,11 +419,12 @@ def add_recipe():
     if not recipe:
         return jsonify({'error': 'Recipe not found.'}), 404
 
-    # check for conflict
+    # check for conflict on this profile
     existing = MealPlan.query.filter_by(
-        user_id   = user_id,
-        plan_date = plan_date,
-        meal_type = recipe.meal_type
+        user_id    = user_id,
+        profile_id = profile_id,
+        plan_date  = plan_date,
+        meal_type  = recipe.meal_type
     ).first()
 
     if existing and not replace:
@@ -425,6 +440,7 @@ def add_recipe():
 
     entry = MealPlan(
         user_id     = user_id,
+        profile_id  = profile_id,
         recipe_id   = recipe_id,
         plan_date   = plan_date,
         meal_type   = recipe.meal_type or 'dinner',

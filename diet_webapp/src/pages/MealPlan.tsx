@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDailyMealPlan, getWeeklyMealPlan, generateMealPlan, regenerateDayPlan } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const MEAL_ICONS: Record<string, string> = {
   breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎'
@@ -81,6 +82,9 @@ function MealCard({ meal, onClick }: { meal: any; onClick: () => void }) {
 
 export default function MealPlan() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const activeProfileId = user?.active_profile_id
+
   const [weeklyPlan, setWeeklyPlan]     = useState<Record<string, any>>({})
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [targets, setTargets]           = useState<any>(null)
@@ -90,26 +94,40 @@ export default function MealPlan() {
   const [notifEnabled, setNotifEnabled] = useState(false)
   const [showNotifModal, setShowNotifModal] = useState(false)
 
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    return d.toISOString().split('T')[0]
-  })
+  // Build the week strip from whatever dates exist in the plan,
+  // falling back to today+6 if no plan yet
+  const weekDates = Object.keys(weeklyPlan).length > 0
+    ? Object.keys(weeklyPlan).sort()
+    : Array.from({ length: 7 }, (_, i) => {
+        const d = new Date()
+        d.setDate(d.getDate() + i)
+        return d.toISOString().split('T')[0]
+      })
 
   const fetchWeekly = async () => {
     try {
       const res = await getWeeklyMealPlan()
-      setWeeklyPlan(res.data.weekly_plan || {})
+      const plan = res.data.weekly_plan || {}
+      setWeeklyPlan(plan)
       setTargets(res.data.daily_targets || null)
+      // select today if it's in the plan, otherwise the first available date
+      const todayStr = new Date().toISOString().split('T')[0]
+      const dates    = Object.keys(plan).sort()
+      if (dates.length > 0 && !plan[todayStr]) {
+        setSelectedDate(dates[0])
+      }
     } catch (_) {} finally { setLoading(false) }
   }
 
   useEffect(() => {
+    setLoading(true)
+    setWeeklyPlan({})
+    setSelectedDate(new Date().toISOString().split('T')[0])
     fetchWeekly()
     if ('Notification' in window && Notification.permission === 'granted') {
       setNotifEnabled(true)
     }
-  }, [])
+  }, [activeProfileId])
 
   const scheduleMealReminders = (meals: any[]) => {
     const mealTimes = [

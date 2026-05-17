@@ -8,7 +8,7 @@ from routes.upload import upload_bp
 from dotenv import load_dotenv
 from routes.notifications import notifications_bp
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import sqlite3
@@ -31,7 +31,7 @@ def create_app():
     app.config['JWT_SECRET_KEY']              = os.getenv('JWT_SECRET_KEY', 'dev-jwt-secret')
     app.config['SQLALCHEMY_DATABASE_URI']     = os.getenv('DATABASE_URL', 'sqlite:///diet_app.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_ACCESS_TOKEN_EXPIRES']    = False
+    app.config['JWT_ACCESS_TOKEN_EXPIRES']    = timedelta(days=7)
     app.config['SQLALCHEMY_ENGINE_OPTIONS']   = {
         'connect_args': {'timeout': 30}
     }

@@ -45,7 +45,7 @@ export default function Layout() {
     fetchUnread()
     const interval = setInterval(fetchUnread, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [user?.active_profile_id])
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">

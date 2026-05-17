@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 from flask_cors import cross_origin
 
-recipes_bp      = Blueprint('recipes', __name__)
-PEXELS_KEY      = os.getenv('PEXELS_API_KEY', '')
+recipes_bp = Blueprint('recipes', __name__)
+PEXELS_KEY = os.getenv('PEXELS_API_KEY', '')
 
 MEAL_FALLBACKS = {
     'breakfast': 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600',
@@ -76,7 +76,6 @@ def get_recipe(recipe_id):
 
         recipe.image_url = image_url
         db.session.commit()
-
         data['image'] = image_url
 
     return jsonify(data), 200

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getTodayLogs, deleteLog, getProfile, getLogsByDate } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 const MEAL_ICONS: Record<string, string> = {
@@ -51,6 +52,8 @@ function NutritionBar({ label, consumed, target, color }: any) {
 
 export default function LogMeal() {
   const navigate                          = useNavigate()
+  const { user }                          = useAuth()
+  const activeProfileId                   = user?.active_profile_id
   const [logs, setLogs]                   = useState<any[]>([])
   const [totals, setTotals]               = useState<any>(null)
   const [targets, setTargets]             = useState<any>(null)
@@ -75,7 +78,7 @@ export default function LogMeal() {
     } catch (_) {} finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchLogs(selectedOffset) }, [selectedOffset])
+  useEffect(() => { fetchLogs(selectedOffset) }, [selectedOffset, activeProfileId])
 
   const handleDelete = async (id: number) => {
     setDeleting(id)

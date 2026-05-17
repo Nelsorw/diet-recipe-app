@@ -76,6 +76,7 @@ class MealLog(db.Model):
 
     id            = db.Column(db.Integer, primary_key=True)
     user_id       = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_id    = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
     recipe_name   = db.Column(db.String(255), nullable=False)
     meal_type     = db.Column(db.String(30), nullable=False)
     calories      = db.Column(db.Float, default=0)
@@ -88,6 +89,7 @@ class MealLog(db.Model):
     def to_dict(self):
         return {
             'id'          : self.id,
+            'profile_id'  : self.profile_id,
             'recipe_name' : self.recipe_name,
             'meal_type'   : self.meal_type,
             'calories'    : self.calories,
@@ -104,6 +106,7 @@ class MealPlan(db.Model):
 
     id            = db.Column(db.Integer, primary_key=True)
     user_id       = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_id    = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
     recipe_id     = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
     plan_date     = db.Column(db.Date, nullable=False)
     meal_type     = db.Column(db.String(30), nullable=False)
@@ -117,6 +120,7 @@ class MealPlan(db.Model):
     def to_dict(self):
         return {
             'id'          : self.id,
+            'profile_id'  : self.profile_id,
             'recipe_id'   : self.recipe_id,
             'plan_date'   : self.plan_date.isoformat(),
             'meal_type'   : self.meal_type,
@@ -179,18 +183,31 @@ class Notification(db.Model):
 
     id         = db.Column(db.Integer, primary_key=True)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_id = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
     title      = db.Column(db.String(255), nullable=False)
     body       = db.Column(db.Text, nullable=False)
-    type       = db.Column(db.String(50), default='general')  # meal_reminder, streak, perfect_day, meal_plan, log_reminder
+    type       = db.Column(db.String(50), default='general')
     is_read    = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
             'id'        : self.id,
+            'profile_id': self.profile_id,
             'title'     : self.title,
             'body'      : self.body,
             'type'      : self.type,
             'is_read'   : self.is_read,
             'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         }
+
+
+class OtpToken(db.Model):
+    __tablename__ = 'otp_tokens'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(120), nullable=False, index=True)
+    otp        = db.Column(db.String(6), nullable=False)
+    verified   = db.Column(db.Boolean, default=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
