@@ -5,6 +5,62 @@ import { useAuth } from '../context/AuthContext'
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400'
 
+// Separate component so useState is called at the top level of a component, not inside .map()
+function RecipeRow({ recipe, onRemove, removing }: {
+  recipe: any
+  onRemove: (id: number, e: React.MouseEvent) => void
+  removing: boolean
+}) {
+  const navigate        = useNavigate()
+  const [imgErr, setImgErr] = useState(false)
+  const imgSrc = imgErr || !recipe.image_url ? DEFAULT_IMG : recipe.image_url
+
+  return (
+    <div
+      onClick={() => navigate(`/recipe/${recipe.id}`)}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.99] overflow-hidden"
+    >
+      <div className="flex items-center gap-3 p-3">
+        <img
+          src={imgSrc}
+          alt={recipe.name}
+          onError={() => setImgErr(true)}
+          className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider capitalize mb-0.5">
+            {recipe.meal_type}
+          </p>
+          <p className="text-sm font-bold text-gray-800 line-clamp-2 capitalize">{recipe.name}</p>
+          <div className="flex gap-1.5 mt-1.5 flex-wrap">
+            <span className="text-[10px] bg-orange-50 text-orange-600 font-bold px-1.5 py-0.5 rounded-md">
+              🔥 {Math.round(recipe.calories || 0)} kcal
+            </span>
+            <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-md">
+              P {(recipe.protein || 0).toFixed(1)}g
+            </span>
+            <span className="text-[10px] bg-yellow-50 text-yellow-600 font-bold px-1.5 py-0.5 rounded-md">
+              C {(recipe.carbs || 0).toFixed(1)}g
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={(e) => onRemove(recipe.id, e)}
+          disabled={removing}
+          className="flex-shrink-0 w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+        >
+          {removing
+            ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
+            : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+          }
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Favorites() {
   const navigate        = useNavigate()
   const { user }        = useAuth()
@@ -61,7 +117,7 @@ export default function Favorites() {
           <div className="text-center py-24">
             <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔖</div>
             <p className="text-gray-700 font-bold mb-1">No saved recipes yet</p>
-            <p className="text-gray-400 text-sm mb-5">Tap the bookmark icon on any recipe to save it here.</p>
+            <p className="text-gray-400 text-sm mb-5">Tap the heart icon on any recipe to save it here.</p>
             <button onClick={() => navigate('/')}
               className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-6 py-3 rounded-2xl transition-colors text-sm">
               Browse Recipes
@@ -69,49 +125,14 @@ export default function Favorites() {
           </div>
         ) : (
           <div className="space-y-3">
-            {recipes.map((recipe: any) => {
-              const [imgErr, setImgErr] = useState(false)
-              const imgSrc = imgErr || !recipe.image_url ? DEFAULT_IMG : recipe.image_url
-              return (
-                <div key={recipe.id}
-                  onClick={() => navigate(`/recipe/${recipe.id}`)}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.99] overflow-hidden">
-                  <div className="flex items-center gap-3 p-3">
-                    <img src={imgSrc} alt={recipe.name} onError={() => setImgErr(true)}
-                      className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider capitalize mb-0.5">
-                        {recipe.meal_type}
-                      </p>
-                      <p className="text-sm font-bold text-gray-800 line-clamp-2 capitalize">{recipe.name}</p>
-                      <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                        <span className="text-[10px] bg-orange-50 text-orange-600 font-bold px-1.5 py-0.5 rounded-md">
-                          🔥 {Math.round(recipe.calories || 0)} kcal
-                        </span>
-                        <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-md">
-                          P {(recipe.protein || 0).toFixed(1)}g
-                        </span>
-                        <span className="text-[10px] bg-yellow-50 text-yellow-600 font-bold px-1.5 py-0.5 rounded-md">
-                          C {(recipe.carbs || 0).toFixed(1)}g
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => handleRemove(recipe.id, e)}
-                      disabled={removing === recipe.id}
-                      className="flex-shrink-0 w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
-                    >
-                      {removing === recipe.id
-                        ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
-                        : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                      }
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+            {recipes.map((recipe: any) => (
+              <RecipeRow
+                key={recipe.id}
+                recipe={recipe}
+                onRemove={handleRemove}
+                removing={removing === recipe.id}
+              />
+            ))}
           </div>
         )}
       </div>

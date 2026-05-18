@@ -49,6 +49,7 @@ export default function More() {
     {
       group: 'Account',
       items: [
+        { icon: '🔖', label: 'Saved Recipes',  desc: 'View your bookmarked recipes',    action: () => navigate('/more/favorites') },
         { icon: '🔐', label: 'Change Password', desc: 'Update your account password',   action: () => navigate('/more/password') },
         { icon: '🔔', label: 'Notifications',   desc: 'View your notifications',        action: () => navigate('/notifications') },
         { icon: '📊', label: 'Progress',        desc: 'View your nutrition progress',   action: () => navigate('/progress')     },

@@ -16,6 +16,7 @@ import SetupProfile from './pages/SetupProfile'
 import SwitchProfile from './pages/SwitchProfile'
 import ChangePassword from './pages/ChangePassword'
 import ForgotPassword from './pages/ForgotPassword'
+import Favorites from './pages/Favorites'
 
 function ProfileGuard({ children }: { children: React.ReactNode }) {
   const { hasProfile, isLoading } = useAuth()
@@ -72,6 +73,7 @@ function AppRoutes() {
         <Route path="/more/edit"       element={<EditProfile />} />
         <Route path="/more/switch"     element={<SwitchProfile />} />
         <Route path="/more/password"   element={<ChangePassword />} />
+        <Route path="/more/favorites"  element={<Favorites />} />
       </Route>
       <Route path="*" element={<Navigate to="/landing" replace />} />
     </Routes>

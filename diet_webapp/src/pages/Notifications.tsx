@@ -3,26 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { getNotifications, markNotifRead, markAllNotifsRead } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
-const TYPE_CONFIG: Record<string, { icon: string; bg: string; text: string; border: string; bar: string }> = {
-  meal_reminder: { icon: '🍽', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', bar: 'bg-emerald-500' },
-  streak       : { icon: '🔥', bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-100',  bar: 'bg-orange-500'  },
-  perfect_day  : { icon: '🏆', bg: 'bg-yellow-50',  text: 'text-yellow-700',  border: 'border-yellow-100',  bar: 'bg-yellow-500'  },
-  meal_plan    : { icon: '📅', bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    bar: 'bg-blue-500'    },
-  log_reminder : { icon: '✏️', bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-100',  bar: 'bg-violet-500'  },
-  general      : { icon: '💬', bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-100',    bar: 'bg-gray-400'    },
+const TYPE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
+  meal_reminder : { bar: 'bg-emerald-500', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
+  streak        : { bar: 'bg-orange-500',  bg: 'bg-orange-50',   text: 'text-orange-700'  },
+  perfect_day   : { bar: 'bg-yellow-500',  bg: 'bg-yellow-50',   text: 'text-yellow-700'  },
+  meal_plan     : { bar: 'bg-blue-500',    bg: 'bg-blue-50',     text: 'text-blue-700'    },
+  log_reminder  : { bar: 'bg-violet-500',  bg: 'bg-violet-50',   text: 'text-violet-700'  },
+  general       : { bar: 'bg-gray-400',    bg: 'bg-gray-50',     text: 'text-gray-700'    },
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  meal_reminder: 'Meal Reminder',
-  streak       : 'Streak',
-  perfect_day  : 'Achievement',
-  meal_plan    : 'Meal Plan',
-  log_reminder : 'Reminder',
-  general      : 'General',
+  meal_reminder : 'Meal Reminder',
+  streak        : 'Streak',
+  perfect_day   : 'Achievement',
+  meal_plan     : 'Meal Plan',
+  log_reminder  : 'Reminder',
+  general       : 'General',
 }
 
 function timeAgo(iso: string) {
-  const diff  = Date.now() - new Date(iso).getTime()
+  const diff = Date.now() - new Date(iso).getTime()
   const secs  = Math.floor(diff / 1000)
   const mins  = Math.floor(secs  / 60)
   const hours = Math.floor(mins  / 60)
@@ -30,63 +30,53 @@ function timeAgo(iso: string) {
   if (days  > 0) return `${days}d ago`
   if (hours > 0) return `${hours}h ago`
   if (mins  > 0) return `${mins}m ago`
+  if (secs  > 0) return `${secs}s ago`
   return 'Just now'
 }
 
 function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void }) {
-  const cfg   = TYPE_CONFIG[notif.type] || TYPE_CONFIG.general
-  const label = TYPE_LABELS[notif.type] || 'General'
+  const colors = TYPE_COLORS[notif.type] || TYPE_COLORS.general
+  const label  = TYPE_LABELS[notif.type] || 'General'
 
   return (
     <div
       onClick={() => { if (!notif.is_read) onRead(notif.id) }}
-      className={`relative rounded-2xl border p-4 transition-all cursor-pointer overflow-hidden ${
+      className={`relative flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden ${
         notif.is_read
-          ? 'bg-white border-gray-100 opacity-55'
-          : `bg-white border-gray-200 shadow-sm hover:shadow-md ${cfg.border}`
+          ? 'bg-white border-gray-100 opacity-60'
+          : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
       }`}
     >
-      {/* left accent bar */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${notif.is_read ? 'bg-gray-100' : cfg.bar}`} />
-
-      <div className="flex gap-3 pl-2">
-        {/* icon */}
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${cfg.bg}`}>
-          {cfg.icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className={`text-sm font-bold leading-snug ${notif.is_read ? 'text-gray-400' : 'text-gray-800'}`}>
-                {notif.title}
-              </p>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                {label}
-              </span>
-            </div>
-            <span className="text-[10px] text-gray-400 flex-shrink-0 whitespace-nowrap mt-0.5">
-              {timeAgo(notif.created_at)}
-            </span>
-          </div>
-          <p className={`text-xs leading-relaxed whitespace-pre-line ${notif.is_read ? 'text-gray-400' : 'text-gray-500'}`}>
-            {notif.body}
-          </p>
-        </div>
-
-        {!notif.is_read && (
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${cfg.bar}`} />
-        )}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${notif.is_read ? 'bg-gray-200' : colors.bar}`} />
+      <div className="flex-shrink-0 pt-0.5">
+        <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${colors.bg} ${colors.text}`}>
+          {label}
+        </span>
       </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className={`text-sm font-bold leading-snug ${notif.is_read ? 'text-gray-400' : 'text-gray-800'}`}>
+            {notif.title}
+          </p>
+          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap">
+            {timeAgo(notif.created_at)}
+          </span>
+        </div>
+        <p className={`text-xs leading-relaxed whitespace-pre-line ${notif.is_read ? 'text-gray-400' : 'text-gray-500'}`}>
+          {notif.body}
+        </p>
+      </div>
+      {!notif.is_read && (
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${colors.bar}`} />
+      )}
     </div>
   )
 }
 
 export default function Notifications() {
-  const navigate        = useNavigate()
-  const { user }        = useAuth()
-  const activeProfileId = user?.active_profile_id
-
+  const navigate                          = useNavigate()
+  const { user }                          = useAuth()
+  const activeProfileId                   = user?.active_profile_id
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading]             = useState(true)
   const [markingAll, setMarkingAll]       = useState(false)
@@ -104,7 +94,9 @@ export default function Notifications() {
   const handleRead = async (id: number) => {
     try {
       await markNotifRead(id)
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+      )
     } catch (_) {}
   }
 
@@ -117,8 +109,6 @@ export default function Notifications() {
   }
 
   const unread = notifications.filter(n => !n.is_read).length
-  const read   = notifications.filter(n =>  n.is_read)
-  const fresh  = notifications.filter(n => !n.is_read)
 
   return (
     <div className="max-w-2xl mx-auto pb-8">
@@ -127,22 +117,25 @@ export default function Notifications() {
       <div className="bg-primary-600 px-4 pt-6 pb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors text-sm font-bold"
+            >
+              ←
             </button>
             <div>
-              <h1 className="text-white text-xl font-extrabold">Notifications</h1>
+              <h1 className="text-white text-xl font-bold">Notifications</h1>
               <p className="text-primary-200 text-xs mt-0.5">
-                {unread > 0 ? `${unread} unread` : 'All caught up ✓'}
+                {unread > 0 ? `${unread} unread` : 'All caught up'}
               </p>
             </div>
           </div>
           {unread > 0 && (
-            <button onClick={handleMarkAll} disabled={markingAll}
-              className="text-xs bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+            <button
+              onClick={handleMarkAll}
+              disabled={markingAll}
+              className="text-xs bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+            >
               {markingAll ? 'Marking...' : 'Mark all read'}
             </button>
           )}
@@ -155,25 +148,29 @@ export default function Notifications() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔔</div>
-            <p className="text-gray-700 font-bold mb-1">No notifications yet</p>
-            <p className="text-gray-400 text-sm">You'll be notified about meals, streaks and achievements.</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <p className="text-gray-700 font-semibold mb-1">No notifications yet</p>
+            <p className="text-gray-400 text-sm">You'll be notified about meals, streaks and goals.</p>
           </div>
         ) : (
           <>
-            {fresh.length > 0 && (
-              <>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">New</p>
-                {fresh.map(n => <NotifCard key={n.id} notif={n} onRead={handleRead} />)}
-              </>
+            {notifications.filter(n => !n.is_read).length > 0 && (
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 pt-1">New</p>
             )}
-            {read.length > 0 && (
-              <>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 pt-2">Earlier</p>
-                {read.map(n => <NotifCard key={n.id} notif={n} onRead={handleRead} />)}
-              </>
+            {notifications.filter(n => !n.is_read).map(n => (
+              <NotifCard key={n.id} notif={n} onRead={handleRead} />
+            ))}
+            {notifications.filter(n => n.is_read).length > 0 && (
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 pt-3">Earlier</p>
             )}
+            {notifications.filter(n => n.is_read).map(n => (
+              <NotifCard key={n.id} notif={n} onRead={handleRead} />
+            ))}
           </>
         )}
       </div>

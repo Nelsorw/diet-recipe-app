@@ -22,13 +22,6 @@ function formatDietaryAttr(raw: string): string {
   return map[raw] ?? raw
 }
 
-// Badge colour based on match score
-function scoreBadgeClass(score: number): string {
-  if (score >= 80) return 'bg-emerald-500'
-  if (score >= 65) return 'bg-primary-600'
-  return 'bg-amber-500'
-}
-
 export default function RecipeCard({ recipe }: { recipe: any }) {
   const navigate    = useNavigate()
   const score       = recipe.suitability_score ? Math.round(recipe.suitability_score * 100) : null
@@ -53,7 +46,7 @@ export default function RecipeCard({ recipe }: { recipe: any }) {
 
         {/* Match score badge — top right */}
         {score !== null && (
-          <span className={`absolute top-2 right-2 ${scoreBadgeClass(score)} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow`}>
+          <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
             {score}% match
           </span>
         )}

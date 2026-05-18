@@ -171,15 +171,30 @@ export default function RecipeDetail() {
     } catch (_) {} finally { setLogging(false) }
   }
 
+  const handleToggleSave = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      if (isSaved) {
+        await unsaveRecipe(recipe.id)
+        setIsSaved(false)
+      } else {
+        await saveRecipe(recipe.id)
+        setIsSaved(true)
+      }
+    } catch (_) {} finally { setSaving(false) }
+  }
+
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         const recipeRes = await getRecipeById(Number(id))
         setRecipe(recipeRes.data)
         try {
-          const logsRes = await getTodayLogs()
-          const logs    = logsRes.data.logs || []
+          const [logsRes, savedRes] = await Promise.all([getTodayLogs(), getSavedIds()])
+          const logs = logsRes.data.logs || []
           if (logs.some((l: any) => l.recipe_name === recipeRes.data.name)) setIsLogged(true)
+          if ((savedRes.data.ids || []).includes(recipeRes.data.id)) setIsSaved(true)
         } catch (_) {}
       } catch (err: any) {
         setError(err.response?.data?.error || 'Failed to load recipe.')
@@ -235,6 +250,22 @@ export default function RecipeDetail() {
         <button onClick={() => navigate(-1)}
           className="absolute top-4 left-4 bg-black/40 hover:bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm text-lg">
           ←
+        </button>
+
+        {/* save/bookmark button */}
+        <button
+          onClick={handleToggleSave}
+          disabled={saving}
+          className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${
+            isSaved ? 'bg-red-500 text-white' : 'bg-black/40 hover:bg-black/60 text-white'
+          }`}
+        >
+          {saving
+            ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            : <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+          }
         </button>
 
         {/* tags on image */}
