@@ -1,31 +1,48 @@
 """
 NutriGuide Chatbot — powered by Groq (Llama 3).
-
-Features:
-- Profile-aware (health goal, dietary restrictions, health condition, targets)
-- Knows today's meal logs and today's meal plan
-- Ingredient-based recipe suggestions from the DB
-- Saves conversation history per profile
-- Multi-language: responds in the same language the user writes in
-  (English and Kinyarwanda both work)
-- Nutrition goal notifications via in-app notification system
+Supports named chat sessions per profile.
 """
 import os
 import requests as http_requests
-from datetime import date
+from datetime import date, datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from models.models import User, ChatMessage, MealLog, MealPlan, Recipe
+from models.models import User, ChatMessage, ChatSession, MealLog, MealPlan, Recipe
 from routes.profile import _get_active_profile
 from utils.nutrition import get_user_targets
 
 chat_bp = Blueprint('chat', __name__)
 
-GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
-GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions'
-GROQ_MODEL   = 'llama-3.3-70b-versatile'   # best free model on Groq
+GROQ_API_KEY  = os.getenv('GROQ_API_KEY', '')
+GROQ_URL      = 'https://api.groq.com/openai/v1/chat/completions'
+GROQ_MODEL    = 'llama-3.3-70b-versatile'
 HISTORY_LIMIT = 20
+
+
+def _get_or_create_session(user_id, profile_id, session_id=None):
+    """Return the requested session, or create a new one."""
+    if session_id:
+        session = ChatSession.query.filter_by(
+            id=session_id, user_id=user_id, profile_id=profile_id
+        ).first()
+        if session:
+            return session
+    # create new session
+    session = ChatSession(user_id=user_id, profile_id=profile_id, title='New Chat')
+    db.session.add(session)
+    db.session.commit()
+    return session
+
+
+def _auto_title(session, first_user_message: str):
+    """Set session title from first user message if still default."""
+    if session.title == 'New Chat':
+        title = first_user_message[:50].strip()
+        if len(first_user_message) > 50:
+            title += '...'
+        session.title = title
+        db.session.commit()
 
 
 def _build_system_prompt(user, profile, targets) -> str:
@@ -42,7 +59,7 @@ def _build_system_prompt(user, profile, targets) -> str:
         'carbs'   : round(sum(l.carbs    for l in logs), 1),
         'fat'     : round(sum(l.fat      for l in logs), 1),
     }
-    logged_meals = [f"{l.meal_type}: {l.recipe_name} ({round(l.calories)} kcal)" for l in logs]
+    logged_meals  = [f"{l.meal_type}: {l.recipe_name} ({round(l.calories)} kcal)" for l in logs]
 
     plans = MealPlan.query.filter_by(
         user_id=user.id, profile_id=profile_id, plan_date=date.today()
@@ -92,8 +109,8 @@ YOUR CAPABILITIES:
 
 LANGUAGE:
 - Detect the language of the user's message and respond in the SAME language
-- You support English and Kinyarwanda fluently
-- If the user writes in Kinyarwanda, respond fully in Kinyarwanda
+- If the user writes in English, respond in English
+- If the user writes in Kinyarwanda, respond in Kinyarwanda
 
 INGREDIENT-BASED RECIPE SUGGESTIONS:
 - When a user mentions ingredients (e.g. "I have rice, eggs, tomatoes"),
@@ -106,9 +123,8 @@ Keep responses to 2-4 sentences for simple questions, more for complex ones.
 STRICT BOUNDARIES — VERY IMPORTANT:
 - You ONLY discuss: nutrition, food, recipes, meal planning, health goals, dietary advice, and the user's personal health data
 - If the user asks about ANYTHING else (geography, history, politics, sports, technology, travel, universities, distances, general knowledge, etc.), you MUST politely decline and redirect
-- When declining, say something like: "I'm NutriGuide, your nutrition assistant — I can only help with food, recipes, and health topics. Is there something nutrition-related I can help you with?"
+- When declining, say: "I'm NutriGuide, your nutrition assistant, I can only help with food, recipes, and health topics. Is there something nutrition-related I can help you with?"
 - Do NOT answer off-topic questions even if you know the answer
-- Do NOT apologize excessively — just redirect clearly and briefly
 
 IMPORTANT: You are NOT a medical doctor. For serious health conditions, recommend consulting a healthcare professional."""
 
@@ -137,43 +153,84 @@ def _search_recipes_by_ingredients(ingredients: list, dietary: str, limit: int =
     ]
 
 
-def _check_nutrition_notification(user_id, profile_id, targets, consumed):
-    if not targets or not consumed:
-        return
-    cal_pct = (consumed.get('calories', 0) / targets.get('daily_calories', 1)) * 100
-    if cal_pct >= 90:
-        from routes.notifications import create_notification
-        from models.models import Notification
-        existing = Notification.query.filter(
-            Notification.user_id    == user_id,
-            Notification.profile_id == profile_id,
-            Notification.type       == 'general',
-            Notification.title.like('%calorie%'),
-            Notification.created_at >= db.func.date('now')
-        ).first()
-        if not existing:
-            create_notification(
-                user_id,
-                f"⚠️ {round(cal_pct)}% of daily calories reached",
-                f"You've consumed {round(consumed['calories'])} of your {round(targets['daily_calories'])} kcal target. "
-                f"Consider lighter options for your remaining meals.",
-                'general',
-                profile_id=profile_id
-            )
+# ── Session management routes ─────────────────────────────────────────────────
 
-
-@chat_bp.route('/history', methods=['GET'])
+@chat_bp.route('/sessions', methods=['GET'])
 @jwt_required()
-def get_history():
+def get_sessions():
     user_id    = int(get_jwt_identity())
     user       = User.query.get_or_404(user_id)
     profile    = _get_active_profile(user)
     profile_id = profile.id if profile else None
-    messages   = ChatMessage.query.filter_by(
+
+    sessions = ChatSession.query.filter_by(
         user_id=user_id, profile_id=profile_id
-    ).order_by(ChatMessage.created_at.asc()).limit(100).all()
+    ).order_by(ChatSession.updated_at.desc()).all()
+
+    return jsonify({'sessions': [s.to_dict() for s in sessions]}), 200
+
+
+@chat_bp.route('/sessions', methods=['POST'])
+@jwt_required()
+def create_session():
+    user_id    = int(get_jwt_identity())
+    user       = User.query.get_or_404(user_id)
+    profile    = _get_active_profile(user)
+    profile_id = profile.id if profile else None
+
+    data  = request.get_json() or {}
+    title = data.get('title', 'New Chat')
+
+    session = ChatSession(user_id=user_id, profile_id=profile_id, title=title)
+    db.session.add(session)
+    db.session.commit()
+    return jsonify({'session': session.to_dict()}), 201
+
+
+@chat_bp.route('/sessions/<int:session_id>', methods=['PUT'])
+@jwt_required()
+def rename_session(session_id):
+    user_id = int(get_jwt_identity())
+    session = ChatSession.query.filter_by(id=session_id, user_id=user_id).first()
+    if not session:
+        return jsonify({'error': 'Session not found.'}), 404
+
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    if not title:
+        return jsonify({'error': 'Title is required.'}), 400
+
+    session.title = title[:100]
+    db.session.commit()
+    return jsonify({'session': session.to_dict()}), 200
+
+
+@chat_bp.route('/sessions/<int:session_id>', methods=['DELETE'])
+@jwt_required()
+def delete_session(session_id):
+    user_id = int(get_jwt_identity())
+    session = ChatSession.query.filter_by(id=session_id, user_id=user_id).first()
+    if not session:
+        return jsonify({'error': 'Session not found.'}), 404
+    db.session.delete(session)
+    db.session.commit()
+    return jsonify({'message': 'Session deleted.'}), 200
+
+
+@chat_bp.route('/sessions/<int:session_id>/messages', methods=['GET'])
+@jwt_required()
+def get_session_messages(session_id):
+    user_id = int(get_jwt_identity())
+    session = ChatSession.query.filter_by(id=session_id, user_id=user_id).first()
+    if not session:
+        return jsonify({'error': 'Session not found.'}), 404
+
+    messages = ChatMessage.query.filter_by(session_id=session_id)\
+        .order_by(ChatMessage.created_at.asc()).all()
     return jsonify({'messages': [m.to_dict() for m in messages]}), 200
 
+
+# ── Send message ──────────────────────────────────────────────────────────────
 
 @chat_bp.route('/send', methods=['POST'])
 @jwt_required()
@@ -186,16 +243,29 @@ def send_message():
     profile    = _get_active_profile(user)
     profile_id = profile.id if profile else None
 
-    data    = request.get_json()
-    message = (data.get('message') or '').strip()
+    data       = request.get_json()
+    message    = (data.get('message') or '').strip()
+    session_id = data.get('session_id')
+
     if not message:
         return jsonify({'error': 'Message is required.'}), 400
 
+    # get or create session
+    session = _get_or_create_session(user_id, profile_id, session_id)
     targets = get_user_targets(profile) if profile else {}
 
     # save user message
-    user_msg = ChatMessage(user_id=user_id, profile_id=profile_id, role='user', content=message)
+    user_msg = ChatMessage(
+        user_id=user_id, profile_id=profile_id,
+        session_id=session.id, role='user', content=message
+    )
     db.session.add(user_msg)
+
+    # auto-title session from first message
+    _auto_title(session, message)
+
+    # update session timestamp
+    session.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
     # ingredient detection
@@ -211,14 +281,13 @@ def send_message():
                 recipe_context += f"- {r['name']} ({r['meal_type']}, {r['calories']} kcal)\n"
             recipe_context += 'Suggest these real recipes from the app.\n'
 
-    # build message history for Groq
-    history = ChatMessage.query.filter_by(
-        user_id=user_id, profile_id=profile_id
-    ).order_by(ChatMessage.created_at.desc()).limit(HISTORY_LIMIT).all()
+    # build message history for this session only
+    history = ChatMessage.query.filter_by(session_id=session.id)\
+        .order_by(ChatMessage.created_at.desc()).limit(HISTORY_LIMIT).all()
     history.reverse()
 
     groq_messages = [{'role': 'system', 'content': _build_system_prompt(user, profile, targets)}]
-    for msg in history[:-1]:   # exclude the message we just saved
+    for msg in history[:-1]:
         groq_messages.append({
             'role'   : 'user' if msg.role == 'user' else 'assistant',
             'content': msg.content
@@ -228,28 +297,23 @@ def send_message():
     try:
         resp = http_requests.post(
             GROQ_URL,
-            headers={
-                'Authorization': f'Bearer {GROQ_API_KEY}',
-                'Content-Type' : 'application/json'
-            },
-            json={
-                'model'      : GROQ_MODEL,
-                'messages'   : groq_messages,
-                'max_tokens' : 1024,
-                'temperature': 0.7,
-            },
+            headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
+            json={'model': GROQ_MODEL, 'messages': groq_messages, 'max_tokens': 1024, 'temperature': 0.7},
             timeout=30
         )
         resp.raise_for_status()
         reply = resp.json()['choices'][0]['message']['content'].strip()
-
     except Exception as e:
         print(f'[Groq Error] {e}')
         reply = "I'm having trouble connecting right now. Please try again in a moment."
 
     # save assistant reply
-    bot_msg = ChatMessage(user_id=user_id, profile_id=profile_id, role='assistant', content=reply)
+    bot_msg = ChatMessage(
+        user_id=user_id, profile_id=profile_id,
+        session_id=session.id, role='assistant', content=reply
+    )
     db.session.add(bot_msg)
+    session.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
     # nutrition notification check
@@ -259,13 +323,34 @@ def send_message():
         ).all()
         consumed = {'calories': sum(l.calories for l in logs), 'protein': sum(l.protein for l in logs)}
         try:
-            _check_nutrition_notification(user_id, profile_id, targets, consumed)
+            cal_pct = (consumed['calories'] / targets.get('daily_calories', 1)) * 100
+            if cal_pct >= 90:
+                from routes.notifications import create_notification
+                from models.models import Notification
+                existing = Notification.query.filter(
+                    Notification.user_id    == user_id,
+                    Notification.profile_id == profile_id,
+                    Notification.type       == 'general',
+                    Notification.title.like('%calorie%')
+                ).first()
+                if not existing:
+                    create_notification(
+                        user_id,
+                        f"⚠️ {round(cal_pct)}% of daily calories reached",
+                        f"You've consumed {round(consumed['calories'])} of your {round(targets['daily_calories'])} kcal target.",
+                        'general', profile_id=profile_id
+                    )
         except Exception:
             pass
 
-    return jsonify({'reply': reply, 'message_id': bot_msg.id}), 200
+    return jsonify({
+        'reply'     : reply,
+        'session_id': session.id,
+        'session'   : session.to_dict()
+    }), 200
 
 
+# ── Legacy clear (kept for compatibility) ────────────────────────────────────
 @chat_bp.route('/clear', methods=['DELETE'])
 @jwt_required()
 def clear_history():
@@ -274,5 +359,6 @@ def clear_history():
     profile    = _get_active_profile(user)
     profile_id = profile.id if profile else None
     ChatMessage.query.filter_by(user_id=user_id, profile_id=profile_id).delete()
+    ChatSession.query.filter_by(user_id=user_id, profile_id=profile_id).delete()
     db.session.commit()
-    return jsonify({'message': 'Conversation cleared.'}), 200
+    return jsonify({'message': 'All conversations cleared.'}), 200

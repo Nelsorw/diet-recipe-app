@@ -220,9 +220,9 @@ export default function RecipeDetail() {
 
   const ingredients = parseList(recipe.ingredients)
   const steps       = parseList(recipe.steps)
-  const imgSrc      = imgError || !recipe.image
+  const imgSrc = imgError || (!recipe.image && !recipe.image_url)
     ? (MEAL_IMAGES[recipe.meal_type?.toLowerCase()] || DEFAULT_IMG)
-    : recipe.image
+    : (recipe.image || recipe.image_url)
 
   // label normalisation
   const dishLabel = recipe.dish_type === 'Other' || recipe.dish_type === 'other'
@@ -393,17 +393,17 @@ export default function RecipeDetail() {
         {/* ── Action buttons ── */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <button
-            onClick={() => { if (!planSuccess) setShowPlanModal(true) }}
+            onClick={() => setShowPlanModal(true)}
             className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all ${
               planSuccess
-                ? 'bg-green-50 border-green-200 cursor-default'
+                ? 'bg-green-50 border-green-200 hover:bg-green-100 active:scale-95'
                 : 'bg-white border-primary-200 hover:bg-primary-50 hover:border-primary-400 active:scale-95'
             }`}
           >
             <span className="text-2xl">{planSuccess ? '✅' : '📅'}</span>
             <span className={`text-xs font-bold ${planSuccess ? 'text-green-600' : 'text-primary-700'}`}>
               {planSuccess
-                ? `Added · ${new Date(planSuccess).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
+                ? `Added · ${new Date(planSuccess).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Change`
                 : 'Add to Meal Plan'}
             </span>
           </button>

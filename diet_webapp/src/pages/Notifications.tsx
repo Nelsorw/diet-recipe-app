@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getNotifications, markNotifRead, markAllNotifsRead } from '../services/api'
+import { getNotifications, markNotifRead, markAllNotifsRead, deleteNotification } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const TYPE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
@@ -34,26 +34,25 @@ function timeAgo(iso: string) {
   return 'Just now'
 }
 
-function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void }) {
+function NotifCard({ notif, onRead, onDelete }: { notif: any; onRead: (id: number) => void; onDelete: (id: number) => void }) {
   const colors = TYPE_COLORS[notif.type] || TYPE_COLORS.general
   const label  = TYPE_LABELS[notif.type] || 'General'
 
   return (
     <div
-      onClick={() => { if (!notif.is_read) onRead(notif.id) }}
-      className={`relative flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden ${
+      className={`relative flex gap-4 p-4 rounded-2xl border transition-all overflow-hidden ${
         notif.is_read
           ? 'bg-white border-gray-100 opacity-60'
           : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
       }`}
     >
       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${notif.is_read ? 'bg-gray-200' : colors.bar}`} />
-      <div className="flex-shrink-0 pt-0.5">
+      <div className="flex-shrink-0 pt-0.5 cursor-pointer" onClick={() => { if (!notif.is_read) onRead(notif.id) }}>
         <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${colors.bg} ${colors.text}`}>
           {label}
         </span>
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { if (!notif.is_read) onRead(notif.id) }}>
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className={`text-sm font-bold leading-snug ${notif.is_read ? 'text-gray-400' : 'text-gray-800'}`}>
             {notif.title}
@@ -66,9 +65,19 @@ function NotifCard({ notif, onRead }: { notif: any; onRead: (id: number) => void
           {notif.body}
         </p>
       </div>
-      {!notif.is_read && (
-        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${colors.bar}`} />
-      )}
+      <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+        {!notif.is_read && <div className={`w-2 h-2 rounded-full ${colors.bar}`} />}
+        <button
+          onClick={() => onDelete(notif.id)}
+          className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
+          title="Delete"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 }
@@ -94,9 +103,14 @@ export default function Notifications() {
   const handleRead = async (id: number) => {
     try {
       await markNotifRead(id)
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      )
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+    } catch (_) {}
+  }
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteNotification(id)
+      setNotifications(prev => prev.filter(n => n.id !== id))
     } catch (_) {}
   }
 
@@ -110,6 +124,12 @@ export default function Notifications() {
 
   const unread = notifications.filter(n => !n.is_read).length
 
+  // safe back — go to /more if no history
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1)
+    else navigate('/more')
+  }
+
   return (
     <div className="max-w-2xl mx-auto pb-8">
 
@@ -118,7 +138,7 @@ export default function Notifications() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors text-sm font-bold"
             >
               ←
@@ -163,13 +183,13 @@ export default function Notifications() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 pt-1">New</p>
             )}
             {notifications.filter(n => !n.is_read).map(n => (
-              <NotifCard key={n.id} notif={n} onRead={handleRead} />
+              <NotifCard key={n.id} notif={n} onRead={handleRead} onDelete={handleDelete} />
             ))}
             {notifications.filter(n => n.is_read).length > 0 && (
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 pt-3">Earlier</p>
             )}
             {notifications.filter(n => n.is_read).map(n => (
-              <NotifCard key={n.id} notif={n} onRead={handleRead} />
+              <NotifCard key={n.id} notif={n} onRead={handleRead} onDelete={handleDelete} />
             ))}
           </>
         )}

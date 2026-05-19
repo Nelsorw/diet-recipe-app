@@ -100,7 +100,7 @@ def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
     exclude_names = exclude_names or set()
 
     for attempt in range(MAX_RETRIES):
-        day_meals  = []
+        day_meals  = []   # list of (meal_type, recipe_dict)
         recipe_ids = []
 
         for meal_type in MEAL_TYPES:
@@ -118,15 +118,16 @@ def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
                 continue
 
             top = random.choice(results[:5])
-            day_meals.append(top)
+            day_meals.append((meal_type, top))
             recipe_ids.append(top.get('id'))
 
         if not day_meals:
             break
 
-        if _nutrition_ok(day_meals, targets) or attempt == MAX_RETRIES - 1:
+        meals_only = [m[1] for m in day_meals]
+        if _nutrition_ok(meals_only, targets) or attempt == MAX_RETRIES - 1:
             entries = []
-            for meal_type, top in zip(MEAL_TYPES, day_meals):
+            for meal_type, top in day_meals:
                 entry = MealPlan(
                     user_id     = user.id,
                     profile_id  = profile.id,

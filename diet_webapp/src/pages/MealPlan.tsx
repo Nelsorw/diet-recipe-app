@@ -102,8 +102,6 @@ export default function MealPlan() {
   const [loading, setLoading]               = useState(true)
   const [generating, setGenerating]         = useState(false)
   const [regenDay, setRegenDay]             = useState<string | null>(null)
-  const [notifEnabled, setNotifEnabled]     = useState(false)
-  const [showNotifModal, setShowNotifModal] = useState(false)
   const [loggedMeals, setLoggedMeals]       = useState<Set<string>>(new Set())
   const [loggingMeal, setLoggingMeal]       = useState<string | null>(null)
 
@@ -139,7 +137,6 @@ export default function MealPlan() {
     setSelectedDate(todayStr)
     fetchWeekly()
     fetchTodayLogs()
-    if ('Notification' in window && Notification.permission === 'granted') setNotifEnabled(true)
   }, [activeProfileId])
 
   const handleLogMeal = async (meal: any) => {
@@ -158,41 +155,12 @@ export default function MealPlan() {
     } catch (_) {} finally { setLoggingMeal(null) }
   }
 
-  const scheduleMealReminders = (meals: any[]) => {
-    const mealTimes = [
-      { type: 'breakfast', hour: 8 }, { type: 'lunch', hour: 13 }, { type: 'dinner', hour: 19 },
-    ]
-    mealTimes.forEach(({ type, hour }) => {
-      const meal = meals.find(m => m.meal_type === type)
-      if (!meal) return
-      const now = new Date(); const target = new Date()
-      target.setHours(hour - 2, 0, 0, 0)
-      const diff = target.getTime() - now.getTime()
-      if (diff > 0) setTimeout(() => {
-        new Notification(`${MEAL_ICONS[type]} ${type.charAt(0).toUpperCase() + type.slice(1)} in 2 hours!`, {
-          body: `🍽 ${meal.recipe_name}\n🔥 ${Math.round(meal.calories)} kcal`, icon: '/favicon.ico'
-        })
-      }, diff)
-    })
-  }
-
-  const handleToggleNotif = async () => {
-    if (notifEnabled) { setShowNotifModal(true); return }
-    if (!('Notification' in window)) return
-    const perm = await Notification.requestPermission()
-    if (perm === 'granted') {
-      setNotifEnabled(true)
-      scheduleMealReminders(weeklyPlan[todayStr]?.meals || [])
-    }
-  }
-
   const handleGenerate = async () => {
     setGenerating(true)
     try {
       const res = await generateMealPlan()
       setWeeklyPlan(res.data.weekly_plan || {})
       setTargets(res.data.daily_targets || null)
-      if (notifEnabled) scheduleMealReminders(res.data.weekly_plan?.[todayStr]?.meals || [])
     } catch (_) {} finally { setGenerating(false) }
   }
 
@@ -217,25 +185,6 @@ export default function MealPlan() {
   return (
     <div className="max-w-2xl mx-auto pb-8">
 
-      {/* Notif off modal */}
-      {showNotifModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <div className="flex justify-center mb-3">
-              <div className="w-14 h-14 bg-yellow-50 rounded-full flex items-center justify-center text-3xl">🔔</div>
-            </div>
-            <h3 className="text-lg font-bold text-center text-gray-800 mb-2">Turn off reminders?</h3>
-            <p className="text-sm text-gray-500 text-center mb-6">You won't receive meal time notifications anymore.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowNotifModal(false)}
-                className="flex-1 border border-gray-200 text-gray-500 font-semibold py-2.5 rounded-xl text-sm">Keep On</button>
-              <button onClick={() => { setNotifEnabled(false); setShowNotifModal(false) }}
-                className="flex-1 bg-red-500 text-white font-bold py-2.5 rounded-xl text-sm">Turn Off</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-primary-600 px-4 pt-6 pb-5">
         <div className="flex items-center justify-between mb-1">
@@ -245,12 +194,6 @@ export default function MealPlan() {
               {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </p>
           </div>
-          <button onClick={handleToggleNotif}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-              notifEnabled ? 'bg-white/20 text-white border-white/30' : 'bg-white/10 text-primary-100 border-white/20 hover:bg-white/20'
-            }`}>
-            {notifEnabled ? '🔔 On' : '🔕 Off'}
-          </button>
         </div>
       </div>
 

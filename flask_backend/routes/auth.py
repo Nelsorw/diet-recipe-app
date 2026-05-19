@@ -9,11 +9,11 @@ import string
 auth_bp = Blueprint('auth', __name__)
 
 
-def generate_password(length: int = 10) -> str:
-    prefix  = 'Login'
-    digits  = ''.join(random.choices(string.digits, k=4))
-    special = random.choice('!@#$%&*')
-    return f"{prefix}{special}{digits}"
+def generate_password() -> str:
+    """Generate a cryptographically random password."""
+    import secrets
+    chars   = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
+    return ''.join(secrets.choice(chars) for _ in range(12))
 
 
 def send_welcome_email(email: str, username: str, password: str) -> bool:
@@ -187,7 +187,6 @@ def verify_otp():
     if not record:
         return jsonify({'error': 'No OTP found. Please request a new one.'}), 400
 
-    # Compare timezone-aware datetimes
     now = datetime.now(timezone.utc)
     expires = record.expires_at
     if expires.tzinfo is None:
@@ -203,7 +202,6 @@ def verify_otp():
 
     record.verified = True
     db.session.commit()
-
     return jsonify({'message': 'OTP verified successfully.'}), 200
 
 
@@ -241,6 +239,11 @@ def register():
 
     if not data or not data.get('email') or not data.get('username'):
         return jsonify({'error': 'Username and email are required.'}), 400
+
+    # basic email format validation
+    import re
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', data['email'].strip()):
+        return jsonify({'error': 'Invalid email address.'}), 400
 
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already registered.'}), 409

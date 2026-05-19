@@ -96,14 +96,17 @@ def create_app():
     flask_app = app
 
     def run_meal_reminders():
-        from models.models import User
+        from models.models import User, UserProfile
         from routes.notifications import generate_meal_reminders
         with flask_app.app_context():
             try:
                 users = User.query.all()
                 for user in users:
                     try:
-                        generate_meal_reminders(user.id)
+                        # run for ALL profiles, not just the active one
+                        profiles = UserProfile.query.filter_by(user_id=user.id).all()
+                        for profile in profiles:
+                            generate_meal_reminders_for_profile(user.id, profile.id)
                     except Exception as e:
                         print(f"[Scheduler] Meal reminder error for user {user.id}: {e}")
                 print(f"[Scheduler] Meal reminders ran at {datetime.now(timezone.utc)}")
@@ -111,14 +114,16 @@ def create_app():
                 print(f"[Scheduler] Fatal error: {e}")
 
     def run_log_reminder():
-        from models.models import User
-        from routes.notifications import send_log_reminder
+        from models.models import User, UserProfile
+        from routes.notifications import send_log_reminder_for_profile
         with flask_app.app_context():
             try:
                 users = User.query.all()
                 for user in users:
                     try:
-                        send_log_reminder(user.id)
+                        profiles = UserProfile.query.filter_by(user_id=user.id).all()
+                        for profile in profiles:
+                            send_log_reminder_for_profile(user.id, profile.id)
                     except Exception as e:
                         print(f"[Scheduler] Log reminder error for user {user.id}: {e}")
                 print(f"[Scheduler] Log reminders ran at {datetime.now(timezone.utc)}")
@@ -126,15 +131,17 @@ def create_app():
                 print(f"[Scheduler] Fatal error: {e}")
 
     def run_streak_and_perfect():
-        from models.models import User
+        from models.models import User, UserProfile
         from routes.notifications import check_streak_milestone, check_perfect_day
         with flask_app.app_context():
             try:
                 users = User.query.all()
                 for user in users:
                     try:
-                        check_streak_milestone(user.id)
-                        check_perfect_day(user.id)
+                        profiles = UserProfile.query.filter_by(user_id=user.id).all()
+                        for profile in profiles:
+                            check_streak_milestone(user.id, profile.id)
+                            check_perfect_day(user.id, profile.id)
                     except Exception as e:
                         print(f"[Scheduler] Streak/perfect error for user {user.id}: {e}")
                 print(f"[Scheduler] Streak/perfect ran at {datetime.now(timezone.utc)}")

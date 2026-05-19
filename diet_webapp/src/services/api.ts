@@ -90,6 +90,7 @@ export const addRecipeToMealPlan = (data: { recipe_id: number; plan_date: string
 export const getNotifications  = ()              => api.get('/notifications')
 export const markNotifRead     = (id: number)    => api.put(`/notifications/${id}/read`)
 export const markAllNotifsRead = ()              => api.put('/notifications/read-all')
+export const deleteNotification = (id: number)  => api.delete(`/notifications/${id}`)
 
 
 export const forgotPassword  = (email: string) =>
@@ -108,6 +109,10 @@ export const saveRecipe      = (id: number)        => api.post(`/favorites/${id}
 export const unsaveRecipe    = (id: number)        => api.delete(`/favorites/${id}`)
 
 // Chat
-export const getChatHistory  = ()                  => api.get('/chat/history')
-export const sendChatMessage = (message: string)   => api.post('/chat/send', { message })
-export const clearChatHistory = ()                 => api.delete('/chat/clear')
+export const getChatSessions        = ()                                    => api.get('/chat/sessions')
+export const createChatSession      = (title?: string)                      => api.post('/chat/sessions', { title: title || 'New Chat' })
+export const renameChatSession      = (id: number, title: string)           => api.put(`/chat/sessions/${id}`, { title })
+export const deleteChatSession      = (id: number)                          => api.delete(`/chat/sessions/${id}`)
+export const getSessionMessages     = (id: number)                          => api.get(`/chat/sessions/${id}/messages`)
+export const sendChatMessage        = (message: string, session_id?: number) => api.post('/chat/send', { message, session_id })
+export const clearChatHistory       = ()                                    => api.delete('/chat/clear')

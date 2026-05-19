@@ -241,6 +241,7 @@ class ChatMessage(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     profile_id = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('chat_sessions.id'), nullable=True)
     role       = db.Column(db.String(10), nullable=False)   # 'user' or 'assistant'
     content    = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -251,4 +252,33 @@ class ChatMessage(db.Model):
             'role'      : self.role,
             'content'   : self.content,
             'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        }
+
+
+class ChatSession(db.Model):
+    __tablename__ = 'chat_sessions'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_id = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
+    title      = db.Column(db.String(200), default='New Chat')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
+
+    messages   = db.relationship('ChatMessage', backref='session', lazy=True,
+                                 cascade='all, delete-orphan',
+                                 foreign_keys='ChatMessage.session_id')
+
+    def to_dict(self):
+        last = ChatMessage.query.filter_by(session_id=self.id)\
+            .order_by(ChatMessage.created_at.desc()).first()
+        return {
+            'id'         : self.id,
+            'title'      : self.title,
+            'created_at' : self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z',
+            'updated_at' : self.updated_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z',
+            'last_message': last.content[:60] + '...' if last and len(last.content) > 60
+                            else (last.content if last else ''),
+            'message_count': ChatMessage.query.filter_by(session_id=self.id).count()
         }

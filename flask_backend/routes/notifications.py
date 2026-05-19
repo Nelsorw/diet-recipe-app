@@ -73,15 +73,23 @@ def create_notification(user_id: int, title: str, body: str, type: str,
 
 
 def generate_meal_reminders(user_id: int):
+    """Called from scheduler — uses active profile."""
+    from models.models import User
+    user    = User.query.get(user_id)
+    profile = _get_active_profile(user) if user else None
+    if profile:
+        generate_meal_reminders_for_profile(user_id, profile.id)
+
+
+def generate_meal_reminders_for_profile(user_id: int, profile_id: int):
+    """Generate meal reminders for a specific profile."""
     from app import db
     from models.models import Notification, MealPlan, User
     from datetime import datetime
     today = date.today()
     now   = datetime.now()
 
-    user       = User.query.get(user_id)
-    profile    = _get_active_profile(user) if user else None
-    profile_id = profile.id if profile else None
+    user = User.query.get(user_id)
 
     plans = MealPlan.query.filter_by(
         user_id=user_id, profile_id=profile_id, plan_date=today
@@ -228,12 +236,19 @@ def check_perfect_day(user_id: int, profile_id: int = None):
 
 
 def send_log_reminder(user_id: int):
+    """Called from scheduler — uses active profile."""
+    from models.models import User
+    user    = User.query.get(user_id)
+    profile = _get_active_profile(user) if user else None
+    if profile:
+        send_log_reminder_for_profile(user_id, profile.id)
+
+
+def send_log_reminder_for_profile(user_id: int, profile_id: int):
     from models.models import Notification, MealLog, User
     today = date.today()
 
-    user       = User.query.get(user_id)
-    profile    = _get_active_profile(user) if user else None
-    profile_id = profile.id if profile else None
+    user = User.query.get(user_id)
 
     logged_today = MealLog.query.filter_by(
         user_id=user_id, profile_id=profile_id, log_date=today
@@ -324,3 +339,17 @@ def mark_all_read():
     ).update({'is_read': True})
     db.session.commit()
     return jsonify({'message': 'All notifications marked as read.'}), 200
+
+
+@notifications_bp.route('/<int:notif_id>', methods=['DELETE'])
+@jwt_required()
+def delete_notification(notif_id):
+    from app import db
+    from models.models import Notification
+    user_id = int(get_jwt_identity())
+    notif   = Notification.query.filter_by(id=notif_id, user_id=user_id).first()
+    if not notif:
+        return jsonify({'error': 'Notification not found.'}), 404
+    db.session.delete(notif)
+    db.session.commit()
+    return jsonify({'message': 'Notification deleted.'}), 200

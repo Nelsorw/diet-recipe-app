@@ -24,9 +24,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading]   = useState(true)
   const [hasProfile, setHasProfile] = useState(false)
   const navigate                    = useNavigate()
-  const timerRef                    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const logoutRef   = useRef<() => void>(() => {})
 
   // ── Inactivity timeout ───────────────────────────────────────────────────
+  // logoutRef always points to the latest clearSession so the timer
+  // never captures a stale closure over navigate.
   const clearSession = () => {
     try { apiLogout() } catch (_) {}
     localStorage.removeItem('token')
@@ -38,9 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/landing', { replace: true })
   }
 
+  // keep logoutRef current on every render
+  logoutRef.current = clearSession
+
   const resetTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(clearSession, INACTIVITY_MS)
+    timerRef.current = setTimeout(() => logoutRef.current(), INACTIVITY_MS)
   }
 
   useEffect(() => {

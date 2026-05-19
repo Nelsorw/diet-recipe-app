@@ -61,7 +61,7 @@ export default function ChangePassword() {
               </div>
             ))}
             <button type="submit" disabled={loading}
-              className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition-colors mt-2">
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition-colors mt-2">
               {loading ? 'Changing...' : 'Change Password'}
             </button>
           </form>

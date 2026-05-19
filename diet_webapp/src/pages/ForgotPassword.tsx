@@ -122,6 +122,21 @@ export default function ForgotPassword() {
                 {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
               <button
+                type="button" disabled={loading}
+                onClick={async () => {
+                  setError(''); setOtp('')
+                  try {
+                    await forgotPassword(email.trim())
+                    setError('')
+                  } catch (err: any) {
+                    setError(err.response?.data?.error || 'Failed to resend OTP.')
+                  }
+                }}
+                className="w-full text-primary-600 text-sm font-semibold hover:underline transition-colors"
+              >
+                🔄 Resend OTP
+              </button>
+              <button
                 type="button"
                 onClick={() => { setStep('email'); setOtp(''); setError('') }}
                 className="w-full text-gray-400 text-sm hover:text-gray-600 transition-colors"

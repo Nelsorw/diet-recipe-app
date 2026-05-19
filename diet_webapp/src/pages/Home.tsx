@@ -48,13 +48,15 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !profileId) return
     const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id, profileId)
     const cached        = localStorage.getItem(CACHE_KEY)
     const cachedTargets = localStorage.getItem(CACHE_TARGET)
     if (cached) {
+      // load from cache instantly — no spinner, no API call
       setAllRecipes(JSON.parse(cached))
       setTargets(cachedTargets ? JSON.parse(cachedTargets) : null)
+      setLoading(false)
     } else {
       fetchRecipes()
     }
