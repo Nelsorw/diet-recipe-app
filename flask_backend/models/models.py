@@ -233,3 +233,22 @@ class SavedRecipe(db.Model):
             'profile_id': self.profile_id,
             'saved_at'  : self.saved_at.isoformat()
         }
+
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    profile_id = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
+    role       = db.Column(db.String(10), nullable=False)   # 'user' or 'assistant'
+    content    = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id'        : self.id,
+            'role'      : self.role,
+            'content'   : self.content,
+            'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        }

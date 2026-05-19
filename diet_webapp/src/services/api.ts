@@ -106,3 +106,8 @@ export const getFavorites    = ()                  => api.get('/favorites')
 export const getSavedIds     = ()                  => api.get('/favorites/ids')
 export const saveRecipe      = (id: number)        => api.post(`/favorites/${id}`)
 export const unsaveRecipe    = (id: number)        => api.delete(`/favorites/${id}`)
+
+// Chat
+export const getChatHistory  = ()                  => api.get('/chat/history')
+export const sendChatMessage = (message: string)   => api.post('/chat/send', { message })
+export const clearChatHistory = ()                 => api.delete('/chat/clear')

@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useRef, useState } from 'react'
+import ChatWidget from './ChatWidget'
 
 const NAV = [
   { to: '/',         icon: '🏠', label: 'Home'      },
@@ -88,6 +89,9 @@ export default function Layout() {
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
+
+      {/* Floating chat widget */}
+      <ChatWidget />
 
       {/* Bottom navigation */}
       <nav

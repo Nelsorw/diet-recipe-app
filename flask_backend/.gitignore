@@ -8,3 +8,4 @@ models/ml/
 models/__pycache__/
 routes/__pycache__/
 data/
+static/

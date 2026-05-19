@@ -36,8 +36,8 @@ const FEATURES = [
 
 const STATS = [
   { value: '247K+', label: 'Recipes' },
-  { value: '6',     label: 'Health Conditions' },
-  { value: '10+',   label: 'Dietary Options' },
+  { value: '4',     label: 'Health Conditions' },
+  { value: '5',   label: 'Dietary Options' },
   { value: '100%',  label: 'Personalized' },
 ]
 
