@@ -3,11 +3,13 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const NAV = [
-  { to: '/admin',         label: 'Dashboard',    icon: '📊', end: true },
-  { to: '/admin/users',   label: 'Users',         icon: '👥' },
-  { to: '/admin/recipes', label: 'Recipes',       icon: '🥗' },
-  { to: '/admin/stats',   label: 'Recipe Stats',  icon: '📈' },
-  { to: '/admin/system',  label: 'System',        icon: '⚙️' },
+  { to: '/admin',              label: 'Dashboard',    icon: '📊', end: true },
+  { to: '/admin/users',        label: 'Users',         icon: '👥' },
+  { to: '/admin/recipes',      label: 'Recipes',       icon: '🥗' },
+  { to: '/admin/recipes/add',  label: 'Add Recipe',    icon: '➕' },
+  { to: '/admin/stats',        label: 'Recipe Stats',  icon: '📈' },
+  { to: '/admin/predictions',  label: 'Predictions',   icon: '🤖' },
+  { to: '/admin/system',       label: 'System',        icon: '⚙️' },
 ]
 
 export default function AdminLayout() {
@@ -48,7 +50,7 @@ export default function AdminLayout() {
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-lg flex-shrink-0">🥗</div>
             <div>
               <p className="text-white font-bold text-sm leading-none">NutriGuide</p>
-              <p className="text-gray-400 text-[10px] mt-0.5">Admin Panel</p>
+              <p className="text-gray-400 text-[10px] mt-0.5">Nutritionist Panel</p>
             </div>
           </div>
         </div>
@@ -90,7 +92,7 @@ export default function AdminLayout() {
                 <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-lg">🥗</div>
                 <div>
                   <p className="text-white font-bold text-sm leading-none">NutriGuide</p>
-                  <p className="text-gray-400 text-[10px] mt-0.5">Admin Panel</p>
+                  <p className="text-gray-400 text-[10px] mt-0.5">Nutritionist Panel</p>
                 </div>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
@@ -136,7 +138,7 @@ export default function AdminLayout() {
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-primary-600 rounded-lg flex items-center justify-center text-sm">🥗</div>
-            <span className="text-white font-bold text-sm">Admin Panel</span>
+            <span className="text-white font-bold text-sm">Nutritionist Panel</span>
           </div>
           <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
             {user?.username?.[0]?.toUpperCase() || 'A'}

@@ -284,3 +284,40 @@ class ChatSession(db.Model):
                             else (last.content if last else ''),
             'message_count': ChatMessage.query.filter_by(session_id=self.id).count()
         }
+
+
+class ModelPrediction(db.Model):
+    """Stores every suitability prediction made by the ML model."""
+    __tablename__ = 'model_predictions'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    profile_id      = db.Column(db.Integer, db.ForeignKey('user_profiles.id'), nullable=True)
+    recipe_id       = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
+    recipe_name     = db.Column(db.String(500), nullable=False, default='')
+    # user context at prediction time
+    health_condition     = db.Column(db.String(50), default='')
+    dietary_restrictions = db.Column(db.String(50), default='')
+    health_goal          = db.Column(db.String(30), default='')
+    # prediction output
+    suitability_score = db.Column(db.Float, nullable=False)
+    suitable          = db.Column(db.Boolean, nullable=False)
+    # source: 'recommendation' | 'mealplan'
+    source          = db.Column(db.String(20), default='recommendation')
+    created_at      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id'                  : self.id,
+            'user_id'             : self.user_id,
+            'profile_id'          : self.profile_id,
+            'recipe_id'           : self.recipe_id,
+            'recipe_name'         : self.recipe_name,
+            'health_condition'    : self.health_condition,
+            'dietary_restrictions': self.dietary_restrictions,
+            'health_goal'         : self.health_goal,
+            'suitability_score'   : self.suitability_score,
+            'suitable'            : self.suitable,
+            'source'              : self.source,
+            'created_at'          : self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+        }

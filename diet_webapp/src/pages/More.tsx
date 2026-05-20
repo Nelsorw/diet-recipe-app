@@ -189,7 +189,7 @@ export default function More() {
           </div>
         </button>
 
-        <p className="text-center text-xs text-gray-300 pb-4">NutriGuide v1.0.0</p>
+        <p className="text-center text-xs text-gray-300 pb-4">Diet and Recipe v1.0.0</p>
       </div>
     </div>
   )

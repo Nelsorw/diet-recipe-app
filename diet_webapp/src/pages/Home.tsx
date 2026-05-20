@@ -48,7 +48,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!user?.id || !profileId) return
+    if (!user?.id) return
     const { recipes: CACHE_KEY, targets: CACHE_TARGET } = getCacheKeys(user.id, profileId)
     const cached        = localStorage.getItem(CACHE_KEY)
     const cachedTargets = localStorage.getItem(CACHE_TARGET)

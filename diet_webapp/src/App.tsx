@@ -23,8 +23,10 @@ import Users from './admin/Users'
 import UserDetail from './admin/UserDetail'
 import Recipes from './admin/Recipes'
 import RecipeEdit from './admin/RecipeEdit'
+import RecipeAdd from './admin/RecipeAdd'
 import RecipeStats from './admin/RecipeStats'
 import System from './admin/System'
+import Predictions from './admin/Predictions'
 
 function ProfileGuard({ children }: { children: React.ReactNode }) {
   const { hasProfile, isLoading } = useAuth()
@@ -103,9 +105,11 @@ function AppRoutes() {
         <Route path="users"           element={<Users />} />
         <Route path="users/:id"       element={<UserDetail />} />
         <Route path="recipes"         element={<Recipes />} />
+        <Route path="recipes/add"     element={<RecipeAdd />} />
         <Route path="recipes/:id"     element={<RecipeEdit />} />
         <Route path="stats"           element={<RecipeStats />} />
         <Route path="system"          element={<System />} />
+        <Route path="predictions"     element={<Predictions />} />
       </Route>
     </Routes>
   )

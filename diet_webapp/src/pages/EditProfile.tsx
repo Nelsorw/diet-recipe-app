@@ -102,8 +102,7 @@ const handleSave = async (e: React.FormEvent) => {
       localStorage.removeItem(`cached_recommendations_${storedUser.id}_${profileId}`)
       localStorage.removeItem(`cached_targets_${storedUser.id}_${profileId}`)
     }
-    setAlert({ isError: false, message: 'Profile updated successfully.' })
-  } catch (err: any) {
+    setAlert({ isError: false, message: 'Profile updated successfully.' })  } catch (err: any) {
     setAlert({ isError: true, message: err.response?.data?.error || 'Failed to save.' })
   } finally { setSaving(false) }
 }
@@ -125,10 +124,10 @@ const handleSave = async (e: React.FormEvent) => {
             <p className="font-bold text-gray-800 mb-1">{alert.isError ? 'Error' : 'Success'}</p>
             <p className="text-sm text-gray-500 mb-4">{alert.message}</p>
             <button
-              onClick={() => { setAlert(null); if (!alert.isError) navigate('/more') }}
+              onClick={() => { setAlert(null); if (!alert.isError) navigate('/') }}
               className={`w-full py-2.5 rounded-xl text-white font-bold text-sm ${alert.isError ? 'bg-red-500' : 'bg-primary-600'}`}
             >
-              OK
+              {alert.isError ? 'OK' : 'View Recommendations'}
             </button>
           </div>
         </div>

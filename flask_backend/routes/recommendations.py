@@ -103,7 +103,8 @@ def recommend():
         'image_url'         : r.image_url,
     } for r in recipes])
 
-    results = get_recommendations(recipes_df, profile, targets, top_n=top_n)
+    results = get_recommendations(recipes_df, profile, targets, top_n=top_n,
+                                  user_id=user_id, source='recommendation')
 
     # attach cached images; fetch from Pexels only for recipes missing one
     recipe_map = {r.id: r for r in recipes}

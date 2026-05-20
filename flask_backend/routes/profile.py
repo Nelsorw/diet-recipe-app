@@ -133,6 +133,7 @@ def create_profile():
     return jsonify({
         'message'       : 'Profile created.',
         'profile'       : profile.to_dict(),
+        'user'          : user.to_dict(),
         'daily_targets' : targets
     }), 201
 

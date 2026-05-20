@@ -47,11 +47,20 @@ export default function SetupProfile() {
   const handleSubmit = async () => {
     setSaving(true); setError('')
     try {
-      const profileRes = await createProfile(form)
+      const profileRes  = await createProfile(form)
       const updatedUser = profileRes.data?.user
+      const newProfileId = profileRes.data?.profile?.id
+
       if (updatedUser) refreshUser(updatedUser)
       setHasProfile(true)
       localStorage.setItem('has_profile', 'true')
+
+      // clear stale cache for this profile so Home fetches fresh recommendations
+      if (user?.id && newProfileId) {
+        localStorage.removeItem(`cached_recommendations_${user.id}_${newProfileId}`)
+        localStorage.removeItem(`cached_targets_${user.id}_${newProfileId}`)
+      }
+
       navigate('/', { replace: true })
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to save profile.')

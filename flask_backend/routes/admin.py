@@ -404,3 +404,119 @@ def recipe_stats():
         'top_saved'     : [{'name': r, 'count': c} for r, c in top_saved],
         'by_meal_type'  : [{'meal_type': m or 'unknown', 'count': c} for m, c in by_meal_type],
     }), 200
+
+
+# ── Add recipe ────────────────────────────────────────────────────────────────
+@admin_bp.route('/recipes', methods=['POST'])
+@admin_required
+def add_recipe():
+    data = request.get_json() or {}
+
+    required = ['name', 'meal_type']
+    for f in required:
+        if not data.get(f):
+            return jsonify({'error': f'{f} is required.'}), 400
+
+    recipe = Recipe(
+        name              = str(data['name'])[:500],
+        minutes           = int(data.get('minutes', 0)),
+        n_steps           = int(data.get('n_steps', 0)),
+        steps             = data.get('steps', ''),
+        description       = data.get('description', ''),
+        ingredients       = data.get('ingredients', ''),
+        n_ingredients     = int(data.get('n_ingredients', 0)),
+        calories          = float(data.get('calories', 0)),
+        fat               = float(data.get('fat', 0)),
+        sugar             = float(data.get('sugar', 0)),
+        sodium            = float(data.get('sodium', 0)),
+        protein           = float(data.get('protein', 0)),
+        saturated_fat     = float(data.get('saturated_fat', 0)),
+        carbs             = float(data.get('carbs', 0)),
+        meal_type         = data.get('meal_type', ''),
+        dish_type         = data.get('dish_type', ''),
+        dietary_attributes= data.get('dietary_attributes', 'No Nutritional Focus'),
+        image_url         = data.get('image_url', None),
+    )
+    db.session.add(recipe)
+    db.session.commit()
+    return jsonify({'message': 'Recipe added.', 'recipe': recipe.to_dict()}), 201
+
+
+# ── Model predictions ─────────────────────────────────────────────────────────
+@admin_bp.route('/predictions', methods=['GET'])
+@admin_required
+def list_predictions():
+    from models.models import ModelPrediction
+    page     = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    source   = request.args.get('source', '').strip()
+    diet     = request.args.get('diet', '').strip()
+
+    query = ModelPrediction.query
+    if source:
+        query = query.filter_by(source=source)
+    if diet:
+        query = query.filter(ModelPrediction.dietary_restrictions.ilike(f'%{diet}%'))
+
+    total = query.count()
+    preds = query.order_by(ModelPrediction.created_at.desc())\
+                 .offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        'predictions': [p.to_dict() for p in preds],
+        'total'      : total,
+        'page'       : page,
+        'per_page'   : per_page,
+        'pages'      : (total + per_page - 1) // per_page
+    }), 200
+
+
+@admin_bp.route('/predictions/stats', methods=['GET'])
+@admin_required
+def prediction_stats():
+    from models.models import ModelPrediction
+    from sqlalchemy import func
+
+    total      = ModelPrediction.query.count()
+    suitable   = ModelPrediction.query.filter_by(suitable=True).count()
+    unsuitable = total - suitable
+
+    # by source
+    by_source = db.session.query(
+        ModelPrediction.source,
+        func.count(ModelPrediction.id).label('count')
+    ).group_by(ModelPrediction.source).all()
+
+    # by dietary restriction
+    by_diet = db.session.query(
+        ModelPrediction.dietary_restrictions,
+        func.count(ModelPrediction.id).label('count'),
+        func.avg(ModelPrediction.suitability_score).label('avg_score')
+    ).group_by(ModelPrediction.dietary_restrictions).all()
+
+    # by health condition
+    by_condition = db.session.query(
+        ModelPrediction.health_condition,
+        func.count(ModelPrediction.id).label('count'),
+        func.avg(ModelPrediction.suitability_score).label('avg_score')
+    ).group_by(ModelPrediction.health_condition).all()
+
+    # top predicted recipes
+    top_recipes = db.session.query(
+        ModelPrediction.recipe_name,
+        func.count(ModelPrediction.id).label('count'),
+        func.avg(ModelPrediction.suitability_score).label('avg_score')
+    ).group_by(ModelPrediction.recipe_name)\
+     .order_by(func.count(ModelPrediction.id).desc())\
+     .limit(10).all()
+
+    return jsonify({
+        'total'      : total,
+        'suitable'   : suitable,
+        'unsuitable' : unsuitable,
+        'suitable_pct': round(suitable / total * 100, 1) if total else 0,
+        'by_source'  : [{'source': s, 'count': c} for s, c in by_source],
+        'by_diet'    : [{'diet': d, 'count': c, 'avg_score': round(float(a), 3)} for d, c, a in by_diet],
+        'by_condition': [{'condition': h, 'count': c, 'avg_score': round(float(a), 3)} for h, c, a in by_condition],
+        'top_recipes': [{'name': r, 'count': c, 'avg_score': round(float(a), 3)} for r, c, a in top_recipes],
+    }), 200

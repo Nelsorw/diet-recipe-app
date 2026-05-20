@@ -113,7 +113,8 @@ def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
             if meal_df.empty:
                 meal_df, recipe_map = _get_sample_df(meal_type)
 
-            results = get_recommendations(meal_df, profile, targets, top_n=5)
+            results = get_recommendations(meal_df, profile, targets, top_n=5,
+                                          user_id=user.id, source='mealplan')
             if not results:
                 continue
 

@@ -3,9 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { adminGetRecipe, adminUpdateRecipe } from '../services/api'
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400'
-const MEAL_TYPES  = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'soup', 'condiment']
-const DISH_TYPES  = ['Main Dish', 'Side Dish', 'Appetizer', 'Dessert', 'Beverage', 'Salad', 'Soup', 'Snack', 'Other']
-const DIET_ATTRS  = ['No Nutritional Focus', 'Low Carb', 'High Protein', 'Low Fat', 'Balanced', 'Vegan', 'Vegetarian']
+const MEAL_TYPES  = ['general', 'dinner', 'lunch', 'breakfast', 'brunch', 'snack']
+const DISH_TYPES  = ['Main Dish', 'Side Dish', 'Dessert', 'Other', 'Salad', 'Beverage']
+const DIET_ATTRS  = [
+  'No Nutritional Focus', 'Low Carb', 'Strict Diet', 'Low Sodium',
+  'Low Cholesterol', 'Low Fat', 'High Calcium', 'Low Calorie'
+]
 
 export default function RecipeEdit() {
   const { id }                  = useParams()

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminListRecipes, adminDeleteRecipe } from '../services/api'
 
-const MEAL_TYPES = ['', 'breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'soup', 'condiment']
+const MEAL_TYPES = ['', 'general', 'dinner', 'lunch', 'breakfast', 'brunch', 'snack']
 
 export default function Recipes() {
   const navigate                  = useNavigate()
@@ -63,9 +63,18 @@ export default function Recipes() {
         </div>
       )}
 
-      <div>
-        <h1 className="text-xl md:text-2xl font-extrabold text-gray-900">Recipes</h1>
-        <p className="text-gray-400 text-sm mt-0.5">{total.toLocaleString()} recipes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-extrabold text-gray-900">Recipes</h1>
+          <p className="text-gray-400 text-sm mt-0.5">{total.toLocaleString()} recipes</p>
+        </div>
+        <button onClick={() => navigate('/admin/recipes/add')}
+          className="flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Recipe
+        </button>
       </div>
 
       {/* Filters */}
