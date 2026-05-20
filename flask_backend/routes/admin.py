@@ -133,10 +133,24 @@ def dashboard():
 def system_stats():
     import sqlite3 as _sqlite3
 
-    # DB file size
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'instance', 'diet_app.db')
-    db_size_bytes = os.path.getsize(db_path) if os.path.exists(db_path) else 0
-    db_size_mb    = round(db_size_bytes / (1024 * 1024), 2)
+    # DB file size — works for SQLite; for PostgreSQL uses pg_database_size
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///diet_app.db')
+    db_size_bytes = 0
+    db_size_mb    = 0
+    if db_url.startswith('sqlite'):
+        db_path = os.path.join(os.path.dirname(__file__), '..', 'instance', 'diet_app.db')
+        if os.path.exists(db_path):
+            db_size_bytes = os.path.getsize(db_path)
+            db_size_mb    = round(db_size_bytes / (1024 * 1024), 2)
+    else:
+        try:
+            result = db.session.execute(
+                db.text('SELECT pg_database_size(current_database())')
+            ).scalar()
+            db_size_bytes = int(result or 0)
+            db_size_mb    = round(db_size_bytes / (1024 * 1024), 2)
+        except Exception:
+            pass
 
     # table row counts
     tables = {

@@ -32,9 +32,12 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI']     = os.getenv('DATABASE_URL', 'sqlite:///diet_app.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_ACCESS_TOKEN_EXPIRES']    = timedelta(days=7)
-    app.config['SQLALCHEMY_ENGINE_OPTIONS']   = {
-        'connect_args': {'timeout': 30}
-    }
+    # Engine options — set connect_args based on DB type
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///diet_app.db')
+    if db_url.startswith('sqlite'):
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'timeout': 30}}
+    else:
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'connect_timeout': 30}}
     app.config['MAIL_SERVER']         = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
     app.config['MAIL_PORT']           = int(os.getenv('MAIL_PORT', 587))
     app.config['MAIL_USE_TLS']        = True
