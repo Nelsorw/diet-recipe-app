@@ -98,7 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileRes.data?.profile) {
         setHasProfile(true)
         localStorage.setItem('has_profile', 'true')
-        navigate('/', { replace: true })
+        // redirect admins to admin panel
+        if (res.data.user?.is_admin) {
+          navigate('/admin', { replace: true })
+        } else {
+          navigate('/', { replace: true })
+        }
       } else {
         setHasProfile(false)
         localStorage.setItem('has_profile', 'false')

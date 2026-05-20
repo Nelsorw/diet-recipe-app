@@ -17,6 +17,14 @@ import SwitchProfile from './pages/SwitchProfile'
 import ChangePassword from './pages/ChangePassword'
 import ForgotPassword from './pages/ForgotPassword'
 import Favorites from './pages/Favorites'
+import AdminLayout from './admin/AdminLayout'
+import Dashboard from './admin/Dashboard'
+import Users from './admin/Users'
+import UserDetail from './admin/UserDetail'
+import Recipes from './admin/Recipes'
+import RecipeEdit from './admin/RecipeEdit'
+import RecipeStats from './admin/RecipeStats'
+import System from './admin/System'
 
 function ProfileGuard({ children }: { children: React.ReactNode }) {
   const { hasProfile, isLoading } = useAuth()
@@ -48,6 +56,18 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return !token ? <>{children}</> : <Navigate to="/" replace />
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, token, isLoading } = useAuth()
+  if (isLoading) return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+    </div>
+  )
+  if (!token) return <Navigate to="/landing" replace />
+  if (!user?.is_admin) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -76,6 +96,17 @@ function AppRoutes() {
         <Route path="/more/favorites"  element={<Favorites />} />
       </Route>
       <Route path="*" element={<Navigate to="/landing" replace />} />
+
+      {/* Admin routes */}
+      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route index                  element={<Dashboard />} />
+        <Route path="users"           element={<Users />} />
+        <Route path="users/:id"       element={<UserDetail />} />
+        <Route path="recipes"         element={<Recipes />} />
+        <Route path="recipes/:id"     element={<RecipeEdit />} />
+        <Route path="stats"           element={<RecipeStats />} />
+        <Route path="system"          element={<System />} />
+      </Route>
     </Routes>
   )
 }

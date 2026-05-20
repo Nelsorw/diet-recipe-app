@@ -116,3 +116,16 @@ export const deleteChatSession      = (id: number)                          => a
 export const getSessionMessages     = (id: number)                          => api.get(`/chat/sessions/${id}/messages`)
 export const sendChatMessage        = (message: string, session_id?: number) => api.post('/chat/send', { message, session_id })
 export const clearChatHistory       = ()                                    => api.delete('/chat/clear')
+
+// Admin
+export const adminDashboard         = ()                                    => api.get('/admin/dashboard')
+export const adminSystem            = ()                                    => api.get('/admin/system')
+export const adminListUsers         = (params?: any)                        => api.get('/admin/users', { params })
+export const adminGetUser           = (id: number)                          => api.get(`/admin/users/${id}`)
+export const adminDeleteUser        = (id: number)                          => api.delete(`/admin/users/${id}`)
+export const adminToggleAdmin       = (id: number)                          => api.post(`/admin/users/${id}/toggle-admin`)
+export const adminListRecipes       = (params?: any)                        => api.get('/admin/recipes', { params })
+export const adminGetRecipe         = (id: number)                          => api.get(`/admin/recipes/${id}`)
+export const adminUpdateRecipe      = (id: number, data: any)               => api.put(`/admin/recipes/${id}`, data)
+export const adminDeleteRecipe      = (id: number)                          => api.delete(`/admin/recipes/${id}`)
+export const adminRecipeStats       = ()                                    => api.get('/admin/recipes/stats')

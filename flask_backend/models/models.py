@@ -10,6 +10,7 @@ class User(db.Model):
     username          = db.Column(db.String(80), unique=True, nullable=False)
     password_hash     = db.Column(db.String(255), nullable=False)
     active_profile_id = db.Column(db.Integer, nullable=True)
+    is_admin          = db.Column(db.Boolean, default=False, nullable=False)
     created_at        = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     profiles          = db.relationship('UserProfile', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -22,6 +23,7 @@ class User(db.Model):
             'email'            : self.email,
             'username'         : self.username,
             'active_profile_id': self.active_profile_id,
+            'is_admin'         : self.is_admin,
             'created_at'       : self.created_at.isoformat()
         }
 
