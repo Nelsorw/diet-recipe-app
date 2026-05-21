@@ -53,21 +53,21 @@ export default function Landing() {
     <div className="min-h-screen bg-white font-sans">
 
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img src="/logo-icon.png" alt="logo" className="w-8 h-8 rounded-full object-cover" />
-          <span className="font-extrabold text-gray-900 text-lg">Diet & Recipe</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo-icon.png" alt="logo" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+          <span className="font-extrabold text-gray-900 text-base sm:text-lg truncate">Diet & Recipe</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => navigate('/login')}
-            className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors px-3 py-1.5"
+            className="text-sm font-semibold text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 min-h-[40px] min-w-[60px]"
           >
             Sign In
           </button>
           <button
             onClick={() => navigate('/register')}
-            className="text-sm font-bold bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl transition-colors"
+            className="text-sm font-bold bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl transition-colors min-h-[40px] whitespace-nowrap"
           >
             Get Started
           </button>
@@ -91,13 +91,13 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => navigate('/register')}
-              className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all shadow-lg shadow-primary-200 hover:shadow-xl hover:-translate-y-0.5"
+              className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all shadow-lg shadow-primary-200 hover:shadow-xl hover:-translate-y-0.5 min-h-[52px]"
             >
               Start for Free
             </button>
             <button
               onClick={() => navigate('/login')}
-              className="bg-white hover:bg-gray-50 text-gray-700 font-bold px-8 py-4 rounded-2xl text-base transition-all border border-gray-200 hover:border-primary-300"
+              className="bg-white hover:bg-gray-50 text-gray-700 font-bold px-8 py-4 rounded-2xl text-base transition-all border border-gray-200 hover:border-primary-300 min-h-[52px]"
             >
               Sign In
             </button>
@@ -105,7 +105,7 @@ export default function Landing() {
         </div>
 
         {/* Stats */}
-        <div className="max-w-2xl mx-auto mt-16 grid grid-cols-4 gap-4">
+        <div className="max-w-2xl mx-auto mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {STATS.map(s => (
             <div key={s.label} className="text-center">
               <p className="text-2xl font-extrabold text-primary-600">{s.value}</p>

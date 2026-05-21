@@ -56,7 +56,7 @@ def create_app():
             cursor.execute("PRAGMA busy_timeout=60000")
             cursor.close()
 
-    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
 
     @app.before_request
     def handle_options():
