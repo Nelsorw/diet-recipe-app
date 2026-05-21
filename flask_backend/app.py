@@ -102,13 +102,12 @@ def create_app():
 
     def run_meal_reminders():
         from models.models import User, UserProfile
-        from routes.notifications import generate_meal_reminders
+        from routes.notifications import generate_meal_reminders_for_profile
         with flask_app.app_context():
             try:
                 users = User.query.all()
                 for user in users:
                     try:
-                        # run for ALL profiles, not just the active one
                         profiles = UserProfile.query.filter_by(user_id=user.id).all()
                         for profile in profiles:
                             generate_meal_reminders_for_profile(user.id, profile.id)

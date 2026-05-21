@@ -1,8 +1,17 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://10.28.6.159:5000'
 
 const api = axios.create({ baseURL: BASE_URL })
+
+// Rewrites any stored image URL that still points to 127.0.0.1
+// so it works when accessed from mobile or any other host.
+export function fixImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  // Replace hardcoded localhost with the current backend base URL
+  return url.replace(/http:\/\/127\.0\.0\.1:\d+/, BASE_URL)
+            .replace(/http:\/\/localhost:\d+/, BASE_URL)
+}
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')

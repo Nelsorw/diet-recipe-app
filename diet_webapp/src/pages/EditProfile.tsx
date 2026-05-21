@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProfile, updateProfile, uploadProfileImage, updateProfileImage } from '../services/api'
+import { getProfile, updateProfile, uploadProfileImage, updateProfileImage, fixImageUrl } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const HEALTH_CONDITIONS = [
@@ -51,7 +51,7 @@ export default function EditProfile() {
     getProfile().then(res => {
       const p = res.data.profile
       setProfileId(p.id)
-      setProfileImage(p.profile_image_url || null)
+      setProfileImage(p.profile_image_url ? fixImageUrl(p.profile_image_url) : null)
       setForm({
         profile_name        : p.profile_name || 'My Profile',
         full_name           : p.full_name || '',

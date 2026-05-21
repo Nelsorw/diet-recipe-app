@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { adminGetUser, adminDeleteUser, adminToggleAdmin } from '../services/api'
+import { adminGetUser, adminDeleteUser, adminToggleAdmin, fixImageUrl } from '../services/api'
 
 export default function UserDetail() {
   const { id }                    = useParams()
@@ -105,7 +105,7 @@ export default function UserDetail() {
               {profiles.map((p: any) => (
                 <div key={p.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   {p.profile_image_url ? (
-                    <img src={p.profile_image_url} alt={p.profile_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                    <img src={fixImageUrl(p.profile_image_url)!} alt={p.profile_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold flex-shrink-0">
                       {p.profile_name?.[0] || '?'}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllProfiles, switchProfile, deleteProfile } from '../services/api'
+import { getAllProfiles, switchProfile, deleteProfile, fixImageUrl } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function SwitchProfile() {
@@ -88,7 +88,7 @@ export default function SwitchProfile() {
                 <div className="flex items-center gap-3 p-4">
                   <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {p.profile_image_url ? (
-                      <img src={p.profile_image_url} alt={p.profile_name} className="w-full h-full object-cover" />
+                      <img src={fixImageUrl(p.profile_image_url)!} alt={p.profile_name} className="w-full h-full object-cover" />
                     ) : (
                       <svg className="w-6 h-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>

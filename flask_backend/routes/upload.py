@@ -43,5 +43,7 @@ def upload_profile_image():
 
     file.save(os.path.join(upload_dir, filename))
 
-    url = f"http://127.0.0.1:5000/static/uploads/{filename}"
+    # Build URL dynamically so it works on any host (local IP, ngrok, production)
+    host = request.host_url.rstrip('/')
+    url = f"{host}/static/uploads/{filename}"
     return jsonify({'message': 'Image uploaded successfully.', 'url': url}), 201
