@@ -294,19 +294,10 @@ def get_weekly_plan():
     profile    = _get_active_profile(user)
     profile_id = profile.id if profile else None
 
-    # find the most recent plan date for this user+profile
-    latest = MealPlan.query.filter_by(user_id=user_id, profile_id=profile_id)\
-        .order_by(MealPlan.plan_date.desc()).first()
-
-    if not latest:
-        return jsonify({
-            'week_start' : date.today().isoformat(),
-            'week_end'   : (date.today() + timedelta(days=6)).isoformat(),
-            'weekly_plan': {}
-        }), 200
-
-    end_date   = latest.plan_date
-    start_date = end_date - timedelta(days=6)
+    # Always show from today forward (7 days), regardless of when plan was generated
+    today      = date.today()
+    start_date = today
+    end_date   = today + timedelta(days=6)
 
     plans = MealPlan.query.filter(
         MealPlan.user_id    == user_id,
@@ -314,6 +305,14 @@ def get_weekly_plan():
         MealPlan.plan_date  >= start_date,
         MealPlan.plan_date  <= end_date
     ).order_by(MealPlan.plan_date, MealPlan.meal_type).all()
+
+    if not plans:
+        return jsonify({
+            'week_start' : start_date.isoformat(),
+            'week_end'   : end_date.isoformat(),
+            'weekly_plan': {},
+            'daily_targets': get_user_targets(profile) if profile else {}
+        }), 200
 
     recipe_ids  = [p.recipe_id for p in plans if p.recipe_id]
     recipes_map = {r.id: r for r in Recipe.query.filter(Recipe.id.in_(recipe_ids)).all()}
@@ -344,9 +343,10 @@ def get_weekly_plan():
             day['day_totals'][k] = round(day['day_totals'][k], 2)
 
     return jsonify({
-        'week_start' : start_date.isoformat(),
-        'week_end'   : end_date.isoformat(),
-        'weekly_plan': weekly
+        'week_start'   : start_date.isoformat(),
+        'week_end'     : end_date.isoformat(),
+        'daily_targets': get_user_targets(profile) if profile else {},
+        'weekly_plan'  : weekly
     }), 200
 
 

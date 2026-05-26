@@ -9,6 +9,14 @@ const DAY_NAMES  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const FULL_DAYS  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400'
 
+// Always use local date (not UTC) to avoid timezone off-by-one issues
+function localDateStr(d = new Date()) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function NutritionBar({ label, value, target, color }: any) {
   const pct = target ? Math.min((value / target) * 100, 100) : 0
   const over = target && value > target * 1.1
@@ -105,12 +113,12 @@ export default function MealPlan() {
   const [loggedMeals, setLoggedMeals]       = useState<Set<string>>(new Set())
   const [loggingMeal, setLoggingMeal]       = useState<string | null>(null)
 
-  const todayStr  = new Date().toISOString().split('T')[0]
+  const todayStr  = localDateStr()
   const weekDates = Object.keys(weeklyPlan).length > 0
     ? Object.keys(weeklyPlan).sort()
     : Array.from({ length: 7 }, (_, i) => {
         const d = new Date(); d.setDate(d.getDate() + i)
-        return d.toISOString().split('T')[0]
+        return localDateStr(d)
       })
 
   const fetchWeekly = async () => {
@@ -119,8 +127,6 @@ export default function MealPlan() {
       const plan = res.data.weekly_plan || {}
       setWeeklyPlan(plan)
       setTargets(res.data.daily_targets || null)
-      const dates = Object.keys(plan).sort()
-      if (dates.length > 0 && !plan[todayStr]) setSelectedDate(dates[0])
     } catch (_) {} finally { setLoading(false) }
   }
 
@@ -134,7 +140,7 @@ export default function MealPlan() {
 
   useEffect(() => {
     setLoading(true); setWeeklyPlan({})
-    setSelectedDate(todayStr)
+    setSelectedDate(localDateStr())
     fetchWeekly()
     fetchTodayLogs()
   }, [activeProfileId])
