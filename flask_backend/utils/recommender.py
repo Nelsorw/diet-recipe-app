@@ -29,7 +29,8 @@ def load_artifacts():
 
 
 def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int = 20,
-                        user_id: int = None, source: str = 'recommendation'):
+                        user_id: int = None, source: str = 'recommendation',
+                        log_predictions: bool = True):
     """
     Vectorized inference — builds the full feature matrix in one pass
     instead of creating a DataFrame per row. ~10-50x faster than the
@@ -158,31 +159,32 @@ def get_recommendations(recipes_df: pd.DataFrame, profile, targets, top_n: int =
 
     results = suitable.to_dict(orient='records')
 
-    # ── Log predictions to DB (async-safe, best-effort) ──────────────────
-    if user_id and profile:
+    # ── Log predictions to DB (bulk insert — fast single query) ──────────
+    if log_predictions and user_id and profile:
         try:
             from app import db
             from models.models import ModelPrediction
             profile_id = getattr(profile, 'id', None)
-            for r in results:
-                pred = ModelPrediction(
-                    user_id              = user_id,
-                    profile_id           = profile_id,
-                    recipe_id            = r.get('id'),
-                    recipe_name          = str(r.get('name', ''))[:500],
-                    health_condition     = getattr(profile, 'health_condition', ''),
-                    dietary_restrictions = getattr(profile, 'dietary_restrictions', ''),
-                    health_goal          = getattr(profile, 'health_goal', ''),
-                    suitability_score    = float(r.get('suitability_score', 0)),
-                    suitable             = bool(r.get('suitable', 1)),
-                    source               = source,
-                )
-                db.session.add(pred)
+            db.session.bulk_insert_mappings(ModelPrediction, [
+                {
+                    'user_id'             : user_id,
+                    'profile_id'          : profile_id,
+                    'recipe_id'           : r.get('id'),
+                    'recipe_name'         : str(r.get('name', ''))[:500],
+                    'health_condition'    : getattr(profile, 'health_condition', ''),
+                    'dietary_restrictions': getattr(profile, 'dietary_restrictions', ''),
+                    'health_goal'         : getattr(profile, 'health_goal', ''),
+                    'suitability_score'   : float(r.get('suitability_score', 0)),
+                    'suitable'            : bool(r.get('suitable', 1)),
+                    'source'              : source,
+                    'created_at'          : __import__('datetime').datetime.utcnow(),
+                }
+                for r in results
+            ])
             db.session.commit()
         except Exception as e:
             print(f'[Predictions] Log error: {e}')
             try:
-                from app import db
                 db.session.rollback()
             except Exception:
                 pass

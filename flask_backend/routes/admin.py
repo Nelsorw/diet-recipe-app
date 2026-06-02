@@ -456,7 +456,188 @@ def add_recipe():
     return jsonify({'message': 'Recipe added.', 'recipe': recipe.to_dict()}), 201
 
 
-# ── Model predictions ─────────────────────────────────────────────────────────
+# ── User Demographics ─────────────────────────────────────────────────────────
+def _compute_bmi_stats():
+    """
+    Calculate BMI for every profile that has weight + height.
+    BMI = weight_kg / (height_m)^2
+    Categories (WHO standard):
+      Underweight : < 18.5
+      Normal      : 18.5 – 24.9
+      Overweight  : 25.0 – 29.9
+      Obese       : >= 30.0
+    """
+    from datetime import date as _date
+
+    profiles = UserProfile.query.filter(
+        UserProfile.weight_kg.isnot(None),
+        UserProfile.height_cm.isnot(None),
+        UserProfile.weight_kg > 0,
+        UserProfile.height_cm > 0,
+    ).all()
+
+    today = _date.today()
+
+    categories = {
+        'underweight': {'total': 0, 'male': 0, 'female': 0, 'child': 0, 'adult': 0, 'elderly': 0},
+        'normal'     : {'total': 0, 'male': 0, 'female': 0, 'child': 0, 'adult': 0, 'elderly': 0},
+        'overweight' : {'total': 0, 'male': 0, 'female': 0, 'child': 0, 'adult': 0, 'elderly': 0},
+        'obese'      : {'total': 0, 'male': 0, 'female': 0, 'child': 0, 'adult': 0, 'elderly': 0},
+    }
+
+    bmi_values = []
+
+    for p in profiles:
+        height_m = p.height_cm / 100
+        bmi      = round(p.weight_kg / (height_m ** 2), 1)
+        bmi_values.append(bmi)
+
+        if bmi < 18.5:
+            cat = 'underweight'
+        elif bmi < 25:
+            cat = 'normal'
+        elif bmi < 30:
+            cat = 'overweight'
+        else:
+            cat = 'obese'
+
+        categories[cat]['total'] += 1
+
+        g = (p.gender or '').lower()
+        if g in ('male', 'female'):
+            categories[cat][g] += 1
+
+        if p.date_of_birth:
+            age = today.year - p.date_of_birth.year - (
+                (today.month, today.day) < (p.date_of_birth.month, p.date_of_birth.day)
+            )
+            if age < 18:
+                categories[cat]['child'] += 1
+            elif age < 60:
+                categories[cat]['adult'] += 1
+            else:
+                categories[cat]['elderly'] += 1
+
+    avg_bmi = round(sum(bmi_values) / len(bmi_values), 1) if bmi_values else 0
+
+    return {
+        'total_with_data': len(profiles),
+        'average_bmi'    : avg_bmi,
+        'categories'     : categories,
+    }
+
+
+@admin_bp.route('/demographics', methods=['GET'])
+@admin_required
+def demographics():
+    from sqlalchemy import func, case
+    from datetime import date
+
+    today = date.today()
+
+    # Age group calculation based on date_of_birth
+    # child: < 18, adult: 18-59, older: >= 60
+    profiles = UserProfile.query.filter(UserProfile.date_of_birth.isnot(None)).all()
+
+    age_groups = {'child': 0, 'adult': 0, 'older': 0, 'unknown': 0}
+    gender_counts = {'male': 0, 'female': 0, 'other': 0}
+
+    # age group × gender matrix
+    matrix = {
+        'child' : {'male': 0, 'female': 0, 'other': 0},
+        'adult' : {'male': 0, 'female': 0, 'other': 0},
+        'older' : {'male': 0, 'female': 0, 'other': 0},
+        'unknown': {'male': 0, 'female': 0, 'other': 0},
+    }
+
+    for p in profiles:
+        # age
+        age = today.year - p.date_of_birth.year - (
+            (today.month, today.day) < (p.date_of_birth.month, p.date_of_birth.day)
+        )
+        if age < 18:
+            group = 'child'
+        elif age < 60:
+            group = 'adult'
+        else:
+            group = 'older'
+        age_groups[group] += 1
+
+        # gender
+        g = (p.gender or '').lower()
+        if g not in ('male', 'female'):
+            g = 'other'
+        gender_counts[g] += 1
+        matrix[group][g] += 1
+
+    # unknown age (no date_of_birth)
+    unknown_count = UserProfile.query.filter(UserProfile.date_of_birth.is_(None)).count()
+    age_groups['unknown'] = unknown_count
+
+    # health condition breakdown by age group + gender
+    def breakdown_by(field):
+        rows = db.session.query(
+            getattr(UserProfile, field),
+            func.count(UserProfile.id).label('count')
+        ).group_by(getattr(UserProfile, field)).all()
+        return [{'label': r[0] or 'Unknown', 'count': r[1]} for r in rows]
+
+    # health condition × gender
+    hc_gender = db.session.query(
+        UserProfile.health_condition,
+        UserProfile.gender,
+        func.count(UserProfile.id).label('count')
+    ).group_by(UserProfile.health_condition, UserProfile.gender).all()
+
+    # dietary restriction × gender
+    diet_gender = db.session.query(
+        UserProfile.dietary_restrictions,
+        UserProfile.gender,
+        func.count(UserProfile.id).label('count')
+    ).group_by(UserProfile.dietary_restrictions, UserProfile.gender).all()
+
+    # health condition × age group (computed in Python)
+    hc_age = {}
+    diet_age = {}
+    for p in UserProfile.query.all():
+        if p.date_of_birth:
+            age = today.year - p.date_of_birth.year - (
+                (today.month, today.day) < (p.date_of_birth.month, p.date_of_birth.day)
+            )
+            grp = 'child' if age < 18 else ('older' if age >= 60 else 'adult')
+        else:
+            grp = 'unknown'
+
+        hc  = p.health_condition or 'Unknown'
+        dr  = p.dietary_restrictions or 'Unknown'
+
+        if hc not in hc_age:
+            hc_age[hc] = {'child': 0, 'adult': 0, 'older': 0, 'unknown': 0}
+        hc_age[hc][grp] += 1
+
+        if dr not in diet_age:
+            diet_age[dr] = {'child': 0, 'adult': 0, 'older': 0, 'unknown': 0}
+        diet_age[dr][grp] += 1
+
+    return jsonify({
+        'total_profiles': UserProfile.query.count(),
+        'age_groups'    : age_groups,
+        'gender'        : gender_counts,
+        'age_gender_matrix': matrix,
+        'health_condition_by_gender': [
+            {'condition': r[0], 'gender': r[1], 'count': r[2]} for r in hc_gender
+        ],
+        'diet_by_gender': [
+            {'diet': r[0], 'gender': r[1], 'count': r[2]} for r in diet_gender
+        ],
+        'health_condition_by_age': [
+            {'condition': hc, **counts} for hc, counts in hc_age.items()
+        ],
+        'diet_by_age': [
+            {'diet': dr, **counts} for dr, counts in diet_age.items()
+        ],
+        'bmi': _compute_bmi_stats(),
+    }), 200
 @admin_bp.route('/predictions', methods=['GET'])
 @admin_required
 def list_predictions():

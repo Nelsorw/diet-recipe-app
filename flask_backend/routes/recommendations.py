@@ -12,7 +12,7 @@ from random import randint
 
 recommendations_bp = Blueprint('recommendations', __name__)
 
-SAMPLE_SIZE = 2000
+SAMPLE_SIZE = 500   # 500 is enough — ML picks the best 20 from these
 PEXELS_KEY  = os.getenv('PEXELS_API_KEY', '')
 
 

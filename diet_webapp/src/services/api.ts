@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://10.195.171.159:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.73:5000'
 
 const api = axios.create({ baseURL: BASE_URL })
 
@@ -141,3 +141,4 @@ export const adminDeleteRecipe      = (id: number)                          => a
 export const adminRecipeStats       = ()                                    => api.get('/admin/recipes/stats')
 export const adminListPredictions   = (params?: any)                        => api.get('/admin/predictions', { params })
 export const adminPredictionStats   = ()                                    => api.get('/admin/predictions/stats')
+export const adminDemographics      = ()                                    => api.get('/admin/demographics')

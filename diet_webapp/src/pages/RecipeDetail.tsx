@@ -190,6 +190,25 @@ export default function RecipeDetail() {
       try {
         const recipeRes = await getRecipeById(Number(id))
         setRecipe(recipeRes.data)
+
+        // Update image in Home cache if it was missing before
+        if (recipeRes.data.image_url) {
+          const user = JSON.parse(localStorage.getItem('user') || '{}')
+          if (user?.id && user?.active_profile_id) {
+            const cacheKey = `cached_recommendations_${user.id}_${user.active_profile_id}`
+            const cached   = localStorage.getItem(cacheKey)
+            if (cached) {
+              try {
+                const recipes = JSON.parse(cached)
+                const updated = recipes.map((r: any) =>
+                  r.id === recipeRes.data.id ? { ...r, image_url: recipeRes.data.image_url } : r
+                )
+                localStorage.setItem(cacheKey, JSON.stringify(updated))
+              } catch (_) {}
+            }
+          }
+        }
+
         try {
           const [logsRes, savedRes] = await Promise.all([getTodayLogs(), getSavedIds()])
           const logs = logsRes.data.logs || []

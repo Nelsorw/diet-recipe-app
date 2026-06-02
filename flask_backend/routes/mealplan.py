@@ -13,9 +13,16 @@ from routes.notifications import create_notification
 
 mealplan_bp  = Blueprint('mealplan', __name__)
 MEAL_TYPES   = ['breakfast', 'lunch', 'dinner']
-SAMPLE_SIZE  = 500    # reduced from 1000 — faster per-meal sampling
-TOLERANCE    = 0.25
-MAX_RETRIES  = 3      # reduced from 5 — 3 attempts is enough
+SAMPLE_SIZE  = 500
+TOLERANCE    = 0.20   # day total must be within 80–120% of target
+MAX_RETRIES  = 5
+
+# How much of the daily target each meal should contribute
+MEAL_CALORIE_SPLIT = {
+    'breakfast': 0.30,  # 30% of daily calories
+    'lunch'    : 0.35,  # 35% of daily calories
+    'dinner'   : 0.35,  # 35% of daily calories
+}
 
 
 def _get_active_profile(user):
@@ -33,7 +40,17 @@ def _get_active_profile(user):
 PEXELS_KEY = os.getenv('PEXELS_API_KEY', '')
 
 
-def _get_sample_df(meal_type, exclude_ids=None, sample_size=SAMPLE_SIZE):
+def _get_sample_df(meal_type, exclude_ids=None, sample_size=SAMPLE_SIZE, prefetched=None):
+    """
+    If prefetched dict is provided (meal_type -> (df, recipe_map)),
+    return from cache instead of hitting the DB again.
+    """
+    if prefetched and meal_type in prefetched:
+        df, recipe_map = prefetched[meal_type]
+        if exclude_ids:
+            df = df[~df['id'].isin(exclude_ids)]
+        return df, recipe_map
+
     query = Recipe.query.filter(Recipe.meal_type.ilike(meal_type))
     if exclude_ids:
         query = query.filter(~Recipe.id.in_(exclude_ids))
@@ -62,6 +79,15 @@ def _get_sample_df(meal_type, exclude_ids=None, sample_size=SAMPLE_SIZE):
     return df, recipe_map
 
 
+def _prefetch_all_meal_types(sample_size=SAMPLE_SIZE):
+    """Fetch one batch per meal type upfront — reused across all 7 days."""
+    prefetched = {}
+    for meal_type in MEAL_TYPES:
+        df, recipe_map = _get_sample_df(meal_type, sample_size=sample_size)
+        prefetched[meal_type] = (df, recipe_map)
+    return prefetched
+
+
 def _nutrition_ok(day_plan, targets):
     total_cal  = sum(m['calories'] for m in day_plan)
     total_pro  = sum(m['protein']  for m in day_plan)
@@ -76,8 +102,12 @@ def _nutrition_ok(day_plan, targets):
     def within(actual, target):
         if target == 0:
             return True
-        return abs(actual - target) / target <= TOLERANCE
+        ratio = actual / target
+        # Must be between 80% and 120% of target
+        return 0.80 <= ratio <= 1.20
 
+    # Calories is the most important — must be within range
+    # Macros: at least 3 out of 3 must be within range
     return (
         within(total_cal,  target_cal)  and
         within(total_pro,  target_pro)  and
@@ -96,15 +126,15 @@ def _get_recent_recipe_names(user_id, profile_id, days=7):
     return set(p.recipe_name for p in plans)
 
 
-def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
+def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None, prefetched=None):
     exclude_names = exclude_names or set()
 
     for attempt in range(MAX_RETRIES):
-        day_meals  = []   # list of (meal_type, recipe_dict)
+        day_meals  = []
         recipe_ids = []
 
         for meal_type in MEAL_TYPES:
-            meal_df, recipe_map = _get_sample_df(meal_type)
+            meal_df, recipe_map = _get_sample_df(meal_type, prefetched=prefetched)
             if meal_df.empty:
                 continue
 
@@ -113,7 +143,16 @@ def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
             if meal_df.empty:
                 meal_df, recipe_map = _get_sample_df(meal_type)
 
-            results = get_recommendations(meal_df, profile, targets, top_n=5,
+            # Build per-meal targets based on the split ratios
+            split = MEAL_CALORIE_SPLIT.get(meal_type, 0.33)
+            meal_targets = {
+                'daily_calories': targets.get('daily_calories', 2000) * split * 3,  # *3 so recommender divides by 3 internally
+                'protein_g'     : targets.get('protein_g', 50)        * split * 3,
+                'carbs_g'       : targets.get('carbs_g', 250)         * split * 3,
+                'fat_g'         : targets.get('fat_g', 65)            * split * 3,
+            }
+
+            results = get_recommendations(meal_df, profile, meal_targets, top_n=5,
                                           user_id=user.id, source='mealplan')
             if not results:
                 continue
@@ -127,6 +166,7 @@ def _generate_day_plan(user, profile, targets, plan_date, exclude_names=None):
 
         meals_only = [m[1] for m in day_meals]
         if _nutrition_ok(meals_only, targets) or attempt == MAX_RETRIES - 1:
+            # On last attempt, check if this is better than nothing
             entries = []
             for meal_type, top in day_meals:
                 entry = MealPlan(
@@ -227,10 +267,15 @@ def generate_plan():
         ).delete()
         db.session.commit()
 
+        # Prefetch one batch per meal type — reused across all 7 days
+        # This reduces DB queries from 21 down to 3 (one per meal type)
+        prefetched = _prefetch_all_meal_types()
+
         weekly_plan = {}
         for i in range(7):
             plan_date = start_date + timedelta(days=i)
-            day_plan  = _generate_day_plan(user, profile, targets, plan_date, exclude_names)
+            day_plan  = _generate_day_plan(user, profile, targets, plan_date,
+                                           exclude_names, prefetched=prefetched)
             weekly_plan[plan_date.isoformat()] = {
                 'meals'     : day_plan,
                 'day_totals': {
