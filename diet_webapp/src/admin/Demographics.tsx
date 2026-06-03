@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminDemographics } from '../services/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
+import * as XLSX from 'xlsx'
 
 const COLORS      = ['#16a34a', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 const AGE_COLORS  = { child: '#3b82f6', adult: '#16a34a', older: '#f59e0b', unknown: '#9ca3af' }
@@ -101,6 +102,108 @@ export default function Demographics() {
   )
   if (!data) return <div className="p-8 text-red-500">Failed to load demographics.</div>
 
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new()
+
+    // Sheet 1: Overview
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Diet & Recipe — Demographics Report'],
+      ['Generated', new Date().toLocaleString()],
+      [],
+      ['Total Profiles', data.total_profiles],
+      [],
+      ['GENDER DISTRIBUTION'],
+      ['Gender', 'Count'],
+      ['Male',   data.gender.male],
+      ['Female', data.gender.female],
+      ['Other',  data.gender.other],
+      [],
+      ['AGE GROUP DISTRIBUTION'],
+      ['Age Group', 'Count'],
+      ['Children (<18)', data.age_groups.child],
+      ['Adults (18–59)', data.age_groups.adult],
+      ['Elderly (60+)',  data.age_groups.older],
+    ]), 'Overview')
+
+    // Sheet 2: Age × Gender Matrix
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Age Group', 'Male', 'Female', 'Other', 'Total'],
+      ...(['child', 'adult', 'older'] as const).map(grp => {
+        const r = data.age_gender_matrix[grp] || {}
+        const total = (r.male||0)+(r.female||0)+(r.other||0)
+        const label = grp === 'child' ? 'Children' : grp === 'adult' ? 'Adults' : 'Elderly'
+        return [label, r.male||0, r.female||0, r.other||0, total]
+      })
+    ]), 'Age x Gender')
+
+    // Sheet 3: Health Condition × Gender
+    const hcGenderPivot: Record<string, any> = {}
+    for (const r of data.health_condition_by_gender) {
+      const c = r.condition || 'Unknown'
+      if (!hcGenderPivot[c]) hcGenderPivot[c] = { condition: c, male: 0, female: 0, other: 0 }
+      const g = (r.gender||'').toLowerCase()
+      if (g === 'male' || g === 'female') hcGenderPivot[c][g] += r.count
+      else hcGenderPivot[c].other += r.count
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Health Condition', 'Male', 'Female', 'Other', 'Total'],
+      ...Object.values(hcGenderPivot).map((r: any) => [
+        r.condition, r.male, r.female, r.other, r.male+r.female+r.other
+      ])
+    ]), 'Condition x Gender')
+
+    // Sheet 4: Health Condition × Age
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Health Condition', 'Children', 'Adults', 'Elderly', 'Total'],
+      ...data.health_condition_by_age.map((r: any) => [
+        r.condition, r.child||0, r.adult||0, r.older||0,
+        (r.child||0)+(r.adult||0)+(r.older||0)
+      ])
+    ]), 'Condition x Age')
+
+    // Sheet 5: Diet × Gender
+    const dietGenderPivot: Record<string, any> = {}
+    for (const r of data.diet_by_gender) {
+      const d = r.diet || 'Unknown'
+      if (!dietGenderPivot[d]) dietGenderPivot[d] = { diet: d, male: 0, female: 0, other: 0 }
+      const g = (r.gender||'').toLowerCase()
+      if (g === 'male' || g === 'female') dietGenderPivot[d][g] += r.count
+      else dietGenderPivot[d].other += r.count
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Dietary Restriction', 'Male', 'Female', 'Other', 'Total'],
+      ...Object.values(dietGenderPivot).map((r: any) => [
+        r.diet, r.male, r.female, r.other, r.male+r.female+r.other
+      ])
+    ]), 'Diet x Gender')
+
+    // Sheet 6: Diet × Age
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Dietary Restriction', 'Children', 'Adults', 'Elderly', 'Total'],
+      ...data.diet_by_age.map((r: any) => [
+        r.diet, r.child||0, r.adult||0, r.older||0,
+        (r.child||0)+(r.adult||0)+(r.older||0)
+      ])
+    ]), 'Diet x Age')
+
+    // Sheet 7: BMI
+    if (data.bmi) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+        ['BMI Category', 'Male', 'Female', 'Children', 'Adults', 'Elderly', 'Total'],
+        ...(['underweight','normal','overweight','obese'] as const).map(cat => {
+          const r = data.bmi.categories[cat]
+          return [cat.charAt(0).toUpperCase()+cat.slice(1), r.male, r.female, r.child, r.adult, r.elderly, r.total]
+        }),
+        [],
+        ['Average BMI', data.bmi.average_bmi],
+        ['Profiles with data', data.bmi.total_with_data],
+      ]), 'BMI Distribution')
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    XLSX.writeFile(wb, `demographics_report_${today}.xlsx`)
+  }
+
   const ageData = [
     { name: 'Children (<18)',  value: data.age_groups.child,   fill: AGE_COLORS.child   },
     { name: 'Adults (18–59)', value: data.age_groups.adult,   fill: AGE_COLORS.adult   },
@@ -122,11 +225,19 @@ export default function Demographics() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-extrabold text-gray-900">User Demographics</h1>
-        <p className="text-gray-400 text-sm mt-0.5">
-          {data.total_profiles.toLocaleString()} total profiles across all users
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-extrabold text-gray-900">User Demographics</h1>
+          <p className="text-gray-400 text-sm mt-0.5">
+            {data.total_profiles.toLocaleString()} total profiles across all users
+          </p>
+        </div>
+        <button
+          onClick={exportExcel}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm shadow-sm"
+        >
+          <span>📥</span> Download Excel Report
+        </button>
       </div>
 
       {/* ── Overview cards ── */}

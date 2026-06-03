@@ -1,3 +1,6 @@
+# Translation (for Kinyarwanda chatbot support)
+deep-translator==1.11.4
+
 # WSGI Server (for production deployment)
 gunicorn==23.0.0
 

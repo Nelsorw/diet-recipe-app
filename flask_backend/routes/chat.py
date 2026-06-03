@@ -19,6 +19,34 @@ GROQ_URL      = 'https://api.groq.com/openai/v1/chat/completions'
 GROQ_MODEL    = 'llama-3.3-70b-versatile'
 HISTORY_LIMIT = 20
 
+# Kinyarwanda common words for detection
+KINYARWANDA_WORDS = {
+    'ndi', 'ndashaka', 'mfite', 'numva', 'mbere', 'none', 'ariko', 'kandi',
+    'neza', 'cyane', 'bite', 'ese', 'oya', 'yego', 'murakaza', 'murakoze',
+    'amakuru', 'muraho', 'mbwira', 'nabona', 'nshobora', 'ndagukunda',
+    'ibiryo', 'indwara', 'ubuzima', 'kurya', 'kunywa', 'protein', 'calories',
+    'ifu', 'umuceri', 'inyama', 'imbuto', 'imboga', 'amata', 'amazi',
+    'uburo', 'ibijumba', 'isombe', 'igitoki', 'dore', 'nkunda', 'nagira',
+    'nakora', 'ngabanye', 'ibiro', 'guteka', 'amajima', 'nifuza', 'nzima',
+    'bifasha', 'birashimishije', 'ndangira', 'ibyo', 'ntibishoboka',
+    'nagomba', 'gukora', 'kugirango', 'ndashimiye', 'murakoze', 'nurangiza'
+}
+
+def _detect_kinyarwanda(text: str) -> bool:
+    """Detect if text is likely Kinyarwanda based on common words."""
+    words = set(text.lower().split())
+    matches = words & KINYARWANDA_WORDS
+    return len(matches) >= 1  # even one match is enough for short messages
+
+def _translate(text: str, source: str, target: str) -> str:
+    """Translate text using Google Translate via deep-translator. Returns original on failure."""
+    try:
+        from deep_translator import GoogleTranslator
+        return GoogleTranslator(source=source, target=target).translate(text) or text
+    except Exception as e:
+        print(f'[Translate] {source}->{target} error: {e}')
+        return text
+
 
 def _get_or_create_session(user_id, profile_id, session_id=None):
     """Return the requested session, or create a new one."""
@@ -108,9 +136,7 @@ YOUR CAPABILITIES:
 5. Warn when user is close to exceeding nutrition targets
 
 LANGUAGE:
-- Detect the language of the user's message and respond in the SAME language
-- If the user writes in English, respond in English
-- If the user writes in Kinyarwanda, respond in Kinyarwanda
+- Always respond in English (translation is handled externally if needed)
 
 INGREDIENT-BASED RECIPE SUGGESTIONS:
 - When a user mentions ingredients (e.g. "I have rice, eggs, tomatoes"),
@@ -250,11 +276,15 @@ def send_message():
     if not message:
         return jsonify({'error': 'Message is required.'}), 400
 
+    # ── Language detection & translation ──────────────────────────────────
+    is_kinyarwanda  = _detect_kinyarwanda(message)
+    message_for_groq = _translate(message, 'rw', 'en') if is_kinyarwanda else message
+
     # get or create session
     session = _get_or_create_session(user_id, profile_id, session_id)
     targets = get_user_targets(profile) if profile else {}
 
-    # save user message
+    # save user message (original language)
     user_msg = ChatMessage(
         user_id=user_id, profile_id=profile_id,
         session_id=session.id, role='user', content=message
@@ -268,12 +298,13 @@ def send_message():
     session.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
-    # ingredient detection
+    # ingredient detection — use translated English for better keyword matching
     ingredient_keywords = ['i have', 'using', 'with', 'ingredients', 'ndi na', 'mfite']
-    has_ingredients = any(kw in message.lower() for kw in ingredient_keywords)
+    has_ingredients = any(kw in message.lower() for kw in ingredient_keywords) or \
+                      any(kw in message_for_groq.lower() for kw in ['i have', 'using', 'ingredients'])
     recipe_context  = ''
     if has_ingredients:
-        words = [w.strip('.,!?') for w in message.split() if len(w) > 3]
+        words = [w.strip('.,!?') for w in message_for_groq.split() if len(w) > 3]
         found = _search_recipes_by_ingredients(words, profile.dietary_restrictions if profile else '')
         if found:
             recipe_context = '\n\n[RECIPES FROM APP DATABASE]\n'
@@ -281,18 +312,22 @@ def send_message():
                 recipe_context += f"- {r['name']} ({r['meal_type']}, {r['calories']} kcal)\n"
             recipe_context += 'Suggest these real recipes from the app.\n'
 
-    # build message history for this session only
+    # build message history — always send English to Groq
     history = ChatMessage.query.filter_by(session_id=session.id)\
         .order_by(ChatMessage.created_at.desc()).limit(HISTORY_LIMIT).all()
     history.reverse()
 
     groq_messages = [{'role': 'system', 'content': _build_system_prompt(user, profile, targets)}]
     for msg in history[:-1]:
+        content = msg.content
+        # translate stored Kinyarwanda messages back to English for Groq context
+        if _detect_kinyarwanda(content):
+            content = _translate(content, 'rw', 'en')
         groq_messages.append({
             'role'   : 'user' if msg.role == 'user' else 'assistant',
-            'content': msg.content
+            'content': content
         })
-    groq_messages.append({'role': 'user', 'content': message + recipe_context})
+    groq_messages.append({'role': 'user', 'content': message_for_groq + recipe_context})
 
     try:
         resp = http_requests.post(
@@ -302,10 +337,12 @@ def send_message():
             timeout=30
         )
         resp.raise_for_status()
-        reply = resp.json()['choices'][0]['message']['content'].strip()
+        reply_en = resp.json()['choices'][0]['message']['content'].strip()
+        # Translate response back to Kinyarwanda if user wrote in Kinyarwanda
+        reply = _translate(reply_en, 'en', 'rw') if is_kinyarwanda else reply_en
     except Exception as e:
         print(f'[Groq Error] {e}')
-        reply = "I'm having trouble connecting right now. Please try again in a moment."
+        reply = "Hari ikibazo cy'itumanaho. Gerageza nyuma gato." if is_kinyarwanda else "I'm having trouble connecting right now. Please try again in a moment."
 
     # save assistant reply
     bot_msg = ChatMessage(
