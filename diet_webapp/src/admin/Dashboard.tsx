@@ -75,31 +75,31 @@ export default function Dashboard() {
       {/* Charts — stack on mobile, 2-col on desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Top logged recipes */}
+        {/* User Activity — daily logs last 7 days */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-bold text-gray-800 text-sm mb-4">Most Logged Recipes</h2>
+          <h2 className="font-bold text-gray-800 text-sm mb-4">Daily Meal Logs (Last 7 Days)</h2>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data.top_logged} layout="vertical" barSize={14}>
-              <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={140} axisLine={false} tickLine={false} />
+            <BarChart data={data.daily_logs} barSize={28}>
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {data.top_logged.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Bar dataKey="count" name="Logs" radius={[4, 4, 0, 0]}>
+                {(data.daily_logs || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Top planned recipes */}
+        {/* Health Conditions Overview */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-bold text-gray-800 text-sm mb-4">Most Planned Recipes</h2>
+          <h2 className="font-bold text-gray-800 text-sm mb-4">Profiles by Health Condition</h2>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data.top_planned} layout="vertical" barSize={14}>
+            <BarChart data={data.health_conditions} layout="vertical" barSize={14}>
               <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={140} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="condition" tick={{ fontSize: 10 }} width={150} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {data.top_planned.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Bar dataKey="count" name="Profiles" radius={[0, 4, 4, 0]}>
+                {(data.health_conditions || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

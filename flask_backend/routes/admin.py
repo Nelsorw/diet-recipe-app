@@ -89,6 +89,7 @@ def dashboard():
      .limit(5).all()
 
     # users by health goal
+    from sqlalchemy import func
     goals = db.session.query(
         UserProfile.health_goal,
         func.count(UserProfile.id).label('count')
@@ -99,6 +100,24 @@ def dashboard():
         UserProfile.dietary_restrictions,
         func.count(UserProfile.id).label('count')
     ).group_by(UserProfile.dietary_restrictions).all()
+
+    # daily logs for the last 7 days
+    daily_logs = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        count = MealLog.query.filter_by(log_date=d).count()
+        daily_logs.append({
+            'day'  : d.strftime('%a'),   # Mon, Tue, ...
+            'date' : d.isoformat(),
+            'count': count
+        })
+
+    # health conditions overview
+    health_conditions = db.session.query(
+        UserProfile.health_condition,
+        func.count(UserProfile.id).label('count')
+    ).group_by(UserProfile.health_condition)\
+     .order_by(func.count(UserProfile.id).desc()).all()
 
     return jsonify({
         'users': {
@@ -120,12 +139,13 @@ def dashboard():
             'chat_messages': total_chat_messages,
             'saved_recipes': total_saved,
         },
-        'top_logged' : [{'name': r, 'count': c} for r, c in top_logged],
-        'top_planned': [{'name': r, 'count': c} for r, c in top_planned],
-        'health_goals': [{'goal': g, 'count': c} for g, c in goals],
+        'top_logged' : [],
+        'top_planned': [],
+        'health_goals'        : [{'goal': g, 'count': c} for g, c in goals],
         'dietary_restrictions': [{'diet': d, 'count': c} for d, c in diets],
+        'daily_logs'          : daily_logs,
+        'health_conditions'   : [{'condition': h or 'Unknown', 'count': c} for h, c in health_conditions],
     }), 200
-
 
 # ── System stats ──────────────────────────────────────────────────────────────
 @admin_bp.route('/system', methods=['GET'])
@@ -638,6 +658,52 @@ def demographics():
         ],
         'bmi': _compute_bmi_stats(),
     }), 200
+# ── Admin Notifications ───────────────────────────────────────────────────────
+@admin_bp.route('/notifications', methods=['GET'])
+@admin_required
+def admin_notifications():
+    from models.models import AdminNotification
+    page        = request.args.get('page', 1, type=int)
+    per_page    = request.args.get('per_page', 30, type=int)
+    unread_only = request.args.get('unread', 'false').lower() == 'true'
+
+    query  = AdminNotification.query
+    if unread_only:
+        query = query.filter_by(is_read=False)
+
+    total  = query.count()
+    unread = AdminNotification.query.filter_by(is_read=False).count()
+    items  = query.order_by(AdminNotification.created_at.desc())\
+                  .offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        'notifications': [n.to_dict() for n in items],
+        'total'        : total,
+        'unread'       : unread,
+        'page'         : page,
+        'pages'        : (total + per_page - 1) // per_page,
+    }), 200
+
+
+@admin_bp.route('/notifications/<int:notif_id>/read', methods=['PUT'])
+@admin_required
+def admin_mark_notif_read(notif_id):
+    from models.models import AdminNotification
+    n = AdminNotification.query.get_or_404(notif_id)
+    n.is_read = True
+    db.session.commit()
+    return jsonify({'message': 'Marked as read.'}), 200
+
+
+@admin_bp.route('/notifications/read-all', methods=['PUT'])
+@admin_required
+def admin_mark_all_notifs_read():
+    from models.models import AdminNotification
+    AdminNotification.query.filter_by(is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'message': 'All marked as read.'}), 200
+
+
 @admin_bp.route('/predictions', methods=['GET'])
 @admin_required
 def list_predictions():

@@ -1,6 +1,26 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
+      >
+        <span className="font-semibold text-gray-800 text-sm">{q}</span>
+        <span className={`text-primary-600 text-lg flex-shrink-0 transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </button>
+      {open && (
+        <div className="px-6 pb-5">
+          <p className="text-gray-500 text-sm leading-relaxed">{a}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const FEATURES = [
   {
     icon : '🧠',
@@ -165,6 +185,109 @@ export default function Landing() {
           >
             Get Started Free
           </button>
+        </div>
+      </section>
+
+      {/* Supported Health Conditions */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-3">Built for your health condition</h2>
+            <p className="text-gray-400 text-base">The AI understands these conditions and adapts every recommendation accordingly.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                icon : '🩺',
+                title: 'No Specific Condition',
+                desc : 'General healthy eating and balanced nutrition for anyone looking to improve their diet and lifestyle.',
+                color: 'bg-green-50 border-green-100',
+                badge: 'bg-green-100 text-green-700',
+              },
+              {
+                icon : '💉',
+                title: 'Type 2 Diabetes',
+                desc : 'Low-glycemic, carb-controlled recipes that help manage blood sugar levels safely.',
+                color: 'bg-blue-50 border-blue-100',
+                badge: 'bg-blue-100 text-blue-700',
+              },
+              {
+                icon : '❤️',
+                title: 'High Blood Pressure',
+                desc : 'Low-sodium, potassium-rich meals specifically chosen to support healthy blood pressure.',
+                color: 'bg-red-50 border-red-100',
+                badge: 'bg-red-100 text-red-700',
+              },
+              {
+                icon : '🫀',
+                title: 'Heart Disease',
+                desc : 'Low saturated fat, low cholesterol recipes that protect cardiovascular health.',
+                color: 'bg-orange-50 border-orange-100',
+                badge: 'bg-orange-100 text-orange-700',
+              },
+            ].map((c, i) => (
+              <div key={i} className={`rounded-2xl border p-6 ${c.color} transition-all hover:-translate-y-1 hover:shadow-md`}>
+                <div className="text-3xl mb-4">{c.icon}</div>
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${c.badge}`}>{c.title}</span>
+                <p className="text-gray-500 text-sm leading-relaxed mt-3">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 px-6 bg-gray-50">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-3">Frequently asked questions</h2>
+            <p className="text-gray-400 text-base">Everything you need to know before getting started.</p>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                q: 'Is it free to use?',
+                a: 'Yes, completely free. Create an account, set up your profile, and start getting personalized meal recommendations immediately — no credit card required.'
+              },
+              {
+                q: 'Do I need to see a doctor or nutritionist first?',
+                a: 'No. The system uses your self-reported health information to tailor recommendations. However, if you have a serious medical condition, we always recommend consulting your doctor alongside using the app.'
+              },
+              {
+                q: 'Can I use it for my child or elderly parent?',
+                a: 'Yes. You can create multiple profiles under one account — one for yourself, one for your child, one for an elderly family member — each with their own health profile and recommendations.'
+              },
+              {
+                q: 'Is my personal health data private?',
+                a: 'Your data is stored securely and never shared with third parties. Only you can see your health profile, meal logs, and recommendations.'
+              },
+              {
+                q: 'How does the AI know what recipes suit me?',
+                a: 'Our machine learning model analyzes your health condition, dietary restrictions, health goal, age, weight, and activity level to score and rank recipes by suitability — just for you.'
+              },
+            ].map((item, i) => (
+              <FAQItem key={i} q={item.q} a={item.a} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 px-6 bg-gradient-to-br from-primary-600 to-emerald-700">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
+            Ready to eat smarter?
+          </h2>
+          <p className="text-primary-200 text-base mb-10 max-w-lg mx-auto">
+            Join users who are already getting personalized meal plans and recipe recommendations tailored to their health needs.
+          </p>
+          <button
+            onClick={() => navigate('/register')}
+            className="bg-white hover:bg-gray-50 text-primary-600 font-extrabold px-10 py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 min-h-[52px]"
+          >
+            Get Started Free →
+          </button>
+          <p className="text-primary-300 text-xs mt-4">No credit card. No subscription. Free forever.</p>
         </div>
       </section>
 

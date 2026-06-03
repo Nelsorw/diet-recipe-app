@@ -22,8 +22,9 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const secs  = Math.floor(diff / 1000)
+  const clean = iso.replace('Z', '')
+  const diff  = Date.now() - new Date(clean).getTime()
+  const secs  = Math.floor(Math.abs(diff) / 1000)
   const mins  = Math.floor(secs  / 60)
   const hours = Math.floor(mins  / 60)
   const days  = Math.floor(hours / 24)

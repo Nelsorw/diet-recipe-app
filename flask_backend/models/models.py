@@ -321,3 +321,27 @@ class ModelPrediction(db.Model):
             'source'              : self.source,
             'created_at'          : self.created_at.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
         }
+
+
+class AdminNotification(db.Model):
+    """Notifications shown in the Nutritionist Panel."""
+    __tablename__ = 'admin_notifications'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    type       = db.Column(db.String(50), nullable=False)   # 'new_user' | 'new_profile' | 'system'
+    title      = db.Column(db.String(255), nullable=False)
+    body       = db.Column(db.Text, nullable=False)
+    is_read    = db.Column(db.Boolean, default=False)
+    ref_user_id = db.Column(db.Integer, nullable=True)      # linked user if relevant
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id'          : self.id,
+            'type'        : self.type,
+            'title'       : self.title,
+            'body'        : self.body,
+            'is_read'     : self.is_read,
+            'ref_user_id' : self.ref_user_id,
+            'created_at'  : self.created_at.isoformat(),
+        }

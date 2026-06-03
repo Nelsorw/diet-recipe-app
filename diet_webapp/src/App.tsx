@@ -28,6 +28,7 @@ import RecipeStats from './admin/RecipeStats'
 import System from './admin/System'
 import Predictions from './admin/Predictions'
 import Demographics from './admin/Demographics'
+import AdminNotifications from './admin/AdminNotifications'
 
 function ProfileGuard({ children }: { children: React.ReactNode }) {
   const { hasProfile, isLoading } = useAuth()
@@ -112,6 +113,7 @@ function AppRoutes() {
         <Route path="system"          element={<System />} />
         <Route path="predictions"     element={<Predictions />} />
         <Route path="demographics"    element={<Demographics />} />
+        <Route path="notifications"   element={<AdminNotifications />} />
       </Route>
     </Routes>
   )

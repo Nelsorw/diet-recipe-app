@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { adminSystem } from '../services/api'
 
 function timeAgo(iso: string) {
-  const diff  = Date.now() - new Date(iso).getTime()
-  const mins  = Math.floor(diff / 60000)
+  // Strip Z to treat as local time (backend stores local server time without tz info)
+  const clean = iso.replace('Z', '')
+  const diff  = Date.now() - new Date(clean).getTime()
+  const mins  = Math.floor(Math.abs(diff) / 60000)
   const hours = Math.floor(mins / 60)
   const days  = Math.floor(hours / 24)
   if (days  > 0) return `${days}d ago`

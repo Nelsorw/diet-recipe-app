@@ -129,6 +129,20 @@ def create_profile():
 
     db.session.commit()
 
+    # Notify admins about new profile
+    try:
+        from models.models import AdminNotification
+        notif = AdminNotification(
+            type        = 'new_profile',
+            title       = '📋 New Profile Created',
+            body        = f'{user.username} created a new profile: "{data.get("profile_name", "My Profile")}" ({data.get("full_name", "")}).',
+            ref_user_id = user_id,
+        )
+        db.session.add(notif)
+        db.session.commit()
+    except Exception:
+        pass
+
     targets = get_user_targets(profile)
     return jsonify({
         'message'       : 'Profile created.',

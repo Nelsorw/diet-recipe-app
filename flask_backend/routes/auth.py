@@ -264,6 +264,20 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Notify admins
+    try:
+        from models.models import AdminNotification
+        notif = AdminNotification(
+            type        = 'new_user',
+            title       = '👤 New User Registered',
+            body        = f'{user.username} ({user.email}) just created an account.',
+            ref_user_id = user.id,
+        )
+        db.session.add(notif)
+        db.session.commit()
+    except Exception:
+        pass
+
     # Send welcome email
     email_sent = send_welcome_email(data['email'], data['username'], password)
 

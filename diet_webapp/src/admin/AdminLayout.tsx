@@ -1,22 +1,36 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { adminGetNotifications } from '../services/api'
 
 const NAV = [
-  { to: '/admin',              label: 'Dashboard',    icon: '📊', end: true },
-  { to: '/admin/users',        label: 'Users',         icon: '👥' },
-  { to: '/admin/demographics', label: 'Demographics',  icon: '📋' },
-  { to: '/admin/recipes',      label: 'Recipes',       icon: '🥗' },
-  { to: '/admin/recipes/add',  label: 'Add Recipe',    icon: '➕' },
-  { to: '/admin/stats',        label: 'Recipe Stats',  icon: '📈' },
-  { to: '/admin/predictions',  label: 'Predictions',   icon: '🤖' },
-  { to: '/admin/system',       label: 'System',        icon: '⚙️' },
+  { to: '/admin',                label: 'Dashboard',    icon: '📊', end: true },
+  { to: '/admin/users',          label: 'Users',         icon: '👥' },
+  { to: '/admin/demographics',   label: 'Demographics',  icon: '📋' },
+  { to: '/admin/recipes',        label: 'Recipes',       icon: '🥗' },
+  { to: '/admin/recipes/add',    label: 'Add Recipe',    icon: '➕' },
+  { to: '/admin/stats',          label: 'Recipe Stats',  icon: '📈' },
+  { to: '/admin/predictions',    label: 'Predictions',   icon: '🤖' },
+  { to: '/admin/notifications',  label: 'Notifications', icon: '🔔' },
+  { to: '/admin/system',         label: 'System',        icon: '⚙️' },
 ]
 
 export default function AdminLayout() {
   const { user, logout }    = useAuth()
   const navigate            = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    const fetchUnread = () => {
+      adminGetNotifications({ per_page: 1 })
+        .then(res => setUnread(res.data.unread || 0))
+        .catch(() => {})
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 60000) // refresh every 60s
+    return () => clearInterval(interval)
+  }, [])
 
   const NavItems = ({ onClose }: { onClose?: () => void }) => (
     <>
@@ -73,6 +87,18 @@ export default function AdminLayout() {
           <button onClick={() => navigate('/')}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-xs font-medium transition-all mb-1">
             <span>🏠</span> Back to App
+          </button>
+          <button onClick={() => navigate('/admin/notifications')}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white text-xs font-medium transition-all mb-1">
+            <span className="relative">
+              🔔
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] flex items-center justify-center font-bold text-white">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </span>
+            <span>Notifications {unread > 0 && `(${unread})`}</span>
           </button>
           <button onClick={logout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-900/30 text-xs font-medium transition-all">
@@ -141,9 +167,14 @@ export default function AdminLayout() {
             <div className="w-6 h-6 bg-primary-600 rounded-lg flex items-center justify-center text-sm">🥗</div>
             <span className="text-white font-bold text-sm">Nutritionist Panel</span>
           </div>
-          <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            {user?.username?.[0]?.toUpperCase() || 'A'}
-          </div>
+          <button onClick={() => navigate('/admin/notifications')} className="relative w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            🔔
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center font-bold">
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
         </header>
 
         {/* Page content */}
