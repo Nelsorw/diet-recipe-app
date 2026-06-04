@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDailyMealPlan, getWeeklyMealPlan, generateMealPlan, regenerateDayPlan, logMeal, getTodayLogs } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { ArrowPathIcon, CheckIcon } from '@heroicons/react/24/outline'
 
 const MEAL_ICONS: Record<string, string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' }
 const MEAL_TIMES: Record<string, string> = { breakfast: '8:00 AM', lunch: '1:00 PM', dinner: '7:00 PM', snack: '3:00 PM' }
@@ -90,7 +91,7 @@ function MealCard({ meal, onNavigate, onLog, isLogged, isLogging }: {
             {isLogging
               ? <><div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" /> Logging...</>
               : isLogged
-              ? '✅ Logged to Diary'
+              ? <><CheckIcon className="w-3.5 h-3.5" /> Logged to Diary</>
               : '✏️ Log This Meal'}
           </button>
         </div>
@@ -266,7 +267,7 @@ export default function MealPlan() {
                 className="flex items-center gap-1.5 text-xs border border-primary-200 text-primary-600 font-bold px-3 py-2 rounded-xl hover:bg-primary-50 transition-colors disabled:opacity-50">
                 {regenDay === selectedDate
                   ? <><div className="h-3 w-3 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" /> Regenerating</>
-                  : '🔄 Redo Day'}
+                  : <><ArrowPathIcon className="w-3.5 h-3.5" /> Redo Day</>}
               </button>
             </div>
 

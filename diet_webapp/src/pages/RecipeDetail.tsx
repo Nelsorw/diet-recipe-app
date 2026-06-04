@@ -233,7 +233,10 @@ export default function RecipeDetail() {
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-6">
       <span className="text-5xl">😕</span>
       <p className="text-red-500 text-center">{error || 'Recipe not found.'}</p>
-      <button onClick={() => navigate(-1)} className="bg-primary-600 text-white px-6 py-2 rounded-xl font-semibold">← Go Back</button>
+      <button onClick={() => navigate(-1)} className="bg-primary-600 text-white px-6 py-2 rounded-xl font-semibold flex items-center gap-1.5">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        Go Back
+      </button>
     </div>
   )
 
@@ -267,8 +270,8 @@ export default function RecipeDetail() {
 
         {/* back button */}
         <button onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 bg-black/40 hover:bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm text-lg">
-          ←
+          className="absolute top-4 left-4 bg-black/40 hover:bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
 
         {/* save/bookmark button */}

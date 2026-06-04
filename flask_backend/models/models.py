@@ -35,6 +35,7 @@ class UserProfile(db.Model):
     user_id               = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     profile_name          = db.Column(db.String(120), default='My Profile')
     profile_image_url     = db.Column(db.String(500), nullable=True)
+    is_active             = db.Column(db.Boolean, default=True, nullable=False)
     full_name             = db.Column(db.String(120))
     date_of_birth         = db.Column(db.Date, nullable=True)
     gender                = db.Column(db.String(10), nullable=False)
@@ -60,6 +61,7 @@ class UserProfile(db.Model):
             'id'                   : self.id,
             'profile_name'         : self.profile_name,
             'profile_image_url'    : self.profile_image_url,
+            'is_active'            : self.is_active,
             'full_name'            : self.full_name,
             'date_of_birth'        : self.date_of_birth.isoformat() if self.date_of_birth else None,
             'age'                  : self.age,

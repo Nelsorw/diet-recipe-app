@@ -2,6 +2,11 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getProfile, getAllProfiles, switchProfile, fixImageUrl } from '../services/api'
+import {
+  PencilIcon, UserGroupIcon, PlusIcon,
+  BookmarkIcon, LockClosedIcon, BellIcon, ChartBarIcon,
+  ArrowRightOnRectangleIcon, ChevronRightIcon
+} from '@heroicons/react/24/outline'
 
 export default function More() {
   const { user, logout, refreshUser }     = useAuth()
@@ -41,18 +46,18 @@ export default function More() {
     {
       group: 'Profile',
       items: [
-        { icon: '✏️', label: 'Edit Profile',   desc: 'Update your personal information',  action: () => navigate('/more/edit')     },
-        { icon: '👥', label: 'Switch Profile', desc: 'Manage & switch between profiles',  action: () => navigate('/more/switch')   },
-        { icon: '➕', label: 'Add Profile',    desc: 'Add a profile for a family member', action: () => navigate('/setup')         },
+        { icon: <PencilIcon className="w-5 h-5" />,    label: 'Edit Profile',   desc: 'Update your personal information',  action: () => navigate('/more/edit')     },
+        { icon: <UserGroupIcon className="w-5 h-5" />, label: 'Switch Profile', desc: 'Manage & switch between profiles',  action: () => navigate('/more/switch')   },
+        { icon: <PlusIcon className="w-5 h-5" />,      label: 'Add Profile',    desc: 'Add a profile for a family member', action: () => navigate('/setup')         },
       ]
     },
     {
       group: 'Account',
       items: [
-        { icon: '🔖', label: 'Saved Recipes',  desc: 'View your bookmarked recipes',    action: () => navigate('/more/favorites') },
-        { icon: '🔐', label: 'Change Password', desc: 'Update your account password',   action: () => navigate('/more/password') },
-        { icon: '🔔', label: 'Notifications',   desc: 'View your notifications',        action: () => navigate('/notifications') },
-        { icon: '📊', label: 'Progress',        desc: 'View your nutrition progress',   action: () => navigate('/progress')     },
+        { icon: <BookmarkIcon className="w-5 h-5" />,  label: 'Saved Recipes',  desc: 'View your bookmarked recipes',    action: () => navigate('/more/favorites') },
+        { icon: <LockClosedIcon className="w-5 h-5" />,label: 'Change Password', desc: 'Update your account password',   action: () => navigate('/more/password') },
+        { icon: <BellIcon className="w-5 h-5" />,      label: 'Notifications',  desc: 'View your notifications',        action: () => navigate('/notifications') },
+        { icon: <ChartBarIcon className="w-5 h-5" />,  label: 'Progress',       desc: 'View your nutrition progress',   action: () => navigate('/progress')     },
       ]
     },
   ]
@@ -101,9 +106,9 @@ export default function More() {
         </div>
         <button
           onClick={() => navigate('/more/edit')}
-          className="text-xs text-primary-600 font-bold border border-primary-200 px-3 py-1.5 rounded-xl hover:bg-primary-50 transition-colors flex-shrink-0"
+          className="text-xs text-primary-600 font-bold border border-primary-200 px-3 py-1.5 rounded-xl hover:bg-primary-50 transition-colors flex-shrink-0 flex items-center gap-1"
         >
-          Edit
+          <PencilIcon className="w-3 h-3" /> Edit
         </button>
       </div>
 
@@ -166,12 +171,12 @@ export default function More() {
                 onClick={item.action}
                 className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors border-t border-gray-50 text-left"
               >
-                <span className="text-xl w-8 text-center">{item.icon}</span>
+                <span className="text-gray-400 w-6 flex items-center justify-center flex-shrink-0">{item.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{item.label}</p>
                   <p className="text-xs text-gray-400">{item.desc}</p>
                 </div>
-                <span className="text-gray-300 text-lg">›</span>
+                <ChevronRightIcon className="w-4 h-4 text-gray-300" />
               </button>
             ))}
           </div>
@@ -182,7 +187,7 @@ export default function More() {
           onClick={() => setShowLogout(true)}
           className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl border border-red-100 hover:bg-red-50 transition-colors shadow-sm"
         >
-          <span className="text-xl w-8 text-center">🚪</span>
+          <ArrowRightOnRectangleIcon className="w-5 h-5 text-red-400" />
           <div className="flex-1 text-left">
             <p className="text-sm font-semibold text-red-500">Sign Out</p>
             <p className="text-xs text-red-300">Sign out of your account</p>

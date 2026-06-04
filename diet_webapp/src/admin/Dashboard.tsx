@@ -60,7 +60,7 @@ export default function Dashboard() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon="👥" label="Total Users"     value={data.users?.total}        sub={`${data.users?.active_7d} active this week`}  color="bg-blue-50 text-blue-700" />
-        <StatCard icon="🆕" label="New This Month"  value={data.users?.new_30d}       sub={`${data.users?.total_profiles} total profiles`} color="bg-green-50 text-green-700" />
+        <StatCard icon="🆕" label="New This Month"  value={data.users?.new_30d}       sub={`${data.users?.total_profiles} profiles · ${data.users?.suspended_profiles || 0} suspended`} color="bg-green-50 text-green-700" />
         <StatCard icon="🥗" label="Total Recipes"   value={data.recipes?.total}       sub={`${data.recipes?.image_pct}% have images`}     color="bg-orange-50 text-orange-700" />
         <StatCard icon="📝" label="Logs Today"      value={data.activity?.logs_today} sub={`${data.activity?.logs_7d} this week`}          color="bg-purple-50 text-purple-700" />
       </div>

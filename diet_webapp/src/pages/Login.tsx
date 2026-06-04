@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { EyeIcon, EyeSlashIcon, XCircleIcon } from '@heroicons/react/24/outline'
 
 export default function Login() {
   const { login }               = useAuth()
@@ -27,7 +28,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-4xl">🥗</span>
+            <img src="/logo-icon.png" alt="logo" className="w-12 h-12 rounded-full object-cover" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-800">Welcome Back</h1>
           <p className="text-gray-500 mt-1">Sign in to your account</p>
@@ -37,7 +38,7 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
-              <span>❌</span>{error}
+              <XCircleIcon className="w-4 h-4 flex-shrink-0" />{error}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -58,8 +59,10 @@ export default function Login() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                 />
                 <button type="button" onClick={() => setShowPwd(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm">
-                  {showPwd ? '🙈' : '👁'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPwd
+                    ? <EyeSlashIcon className="w-5 h-5" />
+                    : <EyeIcon className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -70,10 +73,10 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
             <div className="text-center mt-3">
-            <Link to="/forgot-password" className="text-sm text-gray-400 hover:text-primary-600 transition-colors">
-              Forgot your password?
-            </Link>
-          </div>
+              <Link to="/forgot-password" className="text-sm text-gray-400 hover:text-primary-600 transition-colors">
+                Forgot your password?
+              </Link>
+            </div>
           </form>
         </div>
 

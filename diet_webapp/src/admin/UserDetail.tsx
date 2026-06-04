@@ -97,17 +97,29 @@ export default function UserDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">        {/* Profiles */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-bold text-gray-800 text-sm mb-3">Profiles ({profiles.length})</h2>
+          <h2 className="font-bold text-gray-800 text-sm mb-3">
+            Profiles ({profiles.length})
+            {profiles.filter((p: any) => p.is_active === false).length > 0 && (
+              <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
+                {profiles.filter((p: any) => p.is_active === false).length} suspended
+              </span>
+            )}
+          </h2>
           {profiles.length === 0 ? (
             <p className="text-gray-400 text-sm">No profiles yet.</p>
           ) : (
             <div className="space-y-3">
               {profiles.map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                  p.is_active === false ? 'bg-amber-50 border border-amber-100 opacity-75' : 'bg-gray-50'
+                }`}>
                   {p.profile_image_url ? (
-                    <img src={fixImageUrl(p.profile_image_url)!} alt={p.profile_name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                    <img src={fixImageUrl(p.profile_image_url)!} alt={p.profile_name}
+                      className={`w-10 h-10 rounded-full object-cover flex-shrink-0 ${p.is_active === false ? 'grayscale' : ''}`} />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold flex-shrink-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                      p.is_active === false ? 'bg-gray-200 text-gray-400' : 'bg-primary-100 text-primary-600'
+                    }`}>
                       {p.profile_name?.[0] || '?'}
                     </div>
                   )}
@@ -117,9 +129,17 @@ export default function UserDetail() {
                       {p.age ? `${p.age}y` : ''} {p.gender} · {p.health_goal?.replace('_', ' ')} · {p.dietary_restrictions}
                     </p>
                   </div>
-                  {user.active_profile_id === p.id && (
-                    <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded-full">Active</span>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {user.active_profile_id === p.id && (
+                      <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded-full">Active</span>
+                    )}
+                    {p.is_active === false && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">Suspended</span>
+                    )}
+                    {p.is_active !== false && user.active_profile_id !== p.id && (
+                      <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">Active</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

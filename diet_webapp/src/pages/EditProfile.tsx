@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getProfile, updateProfile, uploadProfileImage, updateProfileImage, fixImageUrl } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { ChevronLeftIcon, CameraIcon } from '@heroicons/react/24/outline'
 
 const HEALTH_CONDITIONS = [
   'No Specific Condition', 'High Blood Pressure',
@@ -135,7 +136,9 @@ const handleSave = async (e: React.FormEvent) => {
 
       {/* Header */}
       <div className="bg-primary-600 px-4 pt-6 pb-5 flex items-center gap-3">
-        <button onClick={() => navigate('/more')} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold">←</button>
+        <button onClick={() => navigate('/more')} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+          <ChevronLeftIcon className="w-4 h-4" />
+        </button>
         <h1 className="text-white text-xl font-bold">Edit Profile</h1>
       </div>
 
@@ -159,8 +162,8 @@ const handleSave = async (e: React.FormEvent) => {
           )}
           {!imageUploading && (
             <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity">
-              <span className="text-white text-lg">📷</span>
-              <span className="text-white text-[10px] font-semibold">Change</span>
+              <CameraIcon className="w-6 h-6 text-white" />
+              <span className="text-white text-[10px] font-semibold mt-1">Change</span>
             </div>
           )}
           {imageUploading && (

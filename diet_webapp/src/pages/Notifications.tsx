@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getNotifications, markNotifRead, markAllNotifsRead, deleteNotification } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { ChevronLeftIcon, TrashIcon, BellIcon } from '@heroicons/react/24/outline'
 
 const TYPE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
   meal_reminder : { bar: 'bg-emerald-500', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
@@ -73,10 +74,7 @@ function NotifCard({ notif, onRead, onDelete }: { notif: any; onRead: (id: numbe
           className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
           title="Delete"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <TrashIcon className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -140,9 +138,9 @@ export default function Notifications() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
-              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors text-sm font-bold"
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
             >
-              ←
+              <ChevronLeftIcon className="w-4 h-4" />
             </button>
             <div>
               <h1 className="text-white text-xl font-bold">Notifications</h1>
@@ -171,9 +169,7 @@ export default function Notifications() {
         ) : notifications.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+              <BellIcon className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-700 font-semibold mb-1">No notifications yet</p>
             <p className="text-gray-400 text-sm">You'll be notified about meals, streaks and goals.</p>

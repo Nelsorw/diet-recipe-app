@@ -59,6 +59,7 @@ export const createProfile    = (d: any)             => api.post('/profile', d)
 export const updateProfile    = (id: number, d: any) => api.put(`/profile/${id}`, d)
 export const switchProfile    = (id: number)         => api.post(`/profile/${id}/switch`)
 export const deleteProfile    = (id: number)         => api.delete(`/profile/${id}`)
+export const suspendProfile   = (id: number)         => api.post(`/profile/${id}/suspend`)
 export const updateProfileImage = (url: string)      => api.put('/profile/image', { profile_image_url: url })
 
 

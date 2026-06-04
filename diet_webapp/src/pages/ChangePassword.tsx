@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { changePassword } from '../services/api'
+import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 
 export default function ChangePassword() {
   const navigate  = useNavigate()
@@ -27,7 +28,9 @@ export default function ChangePassword() {
     <div className="max-w-2xl mx-auto pb-8">
 
       <div className="bg-primary-600 px-4 pt-6 pb-5 flex items-center gap-3">
-        <button onClick={() => navigate('/more')} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold">←</button>
+        <button onClick={() => navigate('/more')} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+          <ChevronLeftIcon className="w-4 h-4" />
+        </button>
         <div>
           <h1 className="text-white text-xl font-bold">Change Password</h1>
           <p className="text-primary-200 text-xs">Update your account security</p>

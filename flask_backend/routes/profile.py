@@ -202,6 +202,9 @@ def switch_profile(profile_id):
     if not profile:
         return jsonify({'error': 'Profile not found.'}), 404
 
+    if not profile.is_active:
+        return jsonify({'error': 'Cannot switch to a suspended profile.'}), 400
+
     user.active_profile_id = profile_id
     db.session.commit()
 
@@ -210,6 +213,31 @@ def switch_profile(profile_id):
         'message'       : f'Switched to {profile.profile_name}.',
         'profile'       : profile.to_dict(),
         'daily_targets' : targets
+    }), 200
+
+
+@profile_bp.route('/<int:profile_id>/suspend', methods=['POST'])
+@jwt_required()
+def suspend_profile(profile_id):
+    user_id = int(get_jwt_identity())
+    user    = User.query.get_or_404(user_id)
+    profile = UserProfile.query.filter_by(id=profile_id, user_id=user_id).first()
+
+    if not profile:
+        return jsonify({'error': 'Profile not found.'}), 404
+
+    # Cannot suspend the active profile — must switch first
+    if user.active_profile_id == profile_id:
+        return jsonify({'error': 'Cannot suspend the active profile. Switch to another profile first.'}), 400
+
+    profile.is_active = not profile.is_active
+    db.session.commit()
+
+    action = 'suspended' if not profile.is_active else 'reactivated'
+    return jsonify({
+        'message'  : f'Profile {action}.',
+        'is_active': profile.is_active,
+        'profile'  : profile.to_dict()
     }), 200
 
 

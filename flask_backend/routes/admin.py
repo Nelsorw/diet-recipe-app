@@ -60,7 +60,8 @@ def dashboard():
     logs_week = MealLog.query.filter(MealLog.log_date >= week_ago).count()
 
     # total profiles
-    total_profiles = UserProfile.query.count()
+    total_profiles    = UserProfile.query.count()
+    suspended_profiles = UserProfile.query.filter_by(is_active=False).count()
 
     # total notifications sent
     total_notifications = Notification.query.count()
@@ -121,10 +122,11 @@ def dashboard():
 
     return jsonify({
         'users': {
-            'total'        : total_users,
-            'active_7d'    : active_user_ids,
-            'new_30d'      : new_users_month,
-            'total_profiles': total_profiles,
+            'total'             : total_users,
+            'active_7d'         : active_user_ids,
+            'new_30d'           : new_users_month,
+            'total_profiles'    : total_profiles,
+            'suspended_profiles': suspended_profiles,
         },
         'recipes': {
             'total'        : total_recipes,

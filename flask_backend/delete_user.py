@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 
-EMAIL = 'dietrcipe@gmail.com'  # change this to delete a different user
+EMAIL = 'daphineu2004@gmail.com'
 
 conn = psycopg2.connect(os.getenv('DATABASE_URL', 'postgresql://postgres:123@localhost:5432/diet_app'))
 cur = conn.cursor()
