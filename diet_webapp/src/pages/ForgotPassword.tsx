@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { forgotPassword, verifyOtp, resetPassword } from '../services/api'
+import { LockClosedIcon, EnvelopeIcon, KeyIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline'
 
 type Step = 'email' | 'otp' | 'password' | 'done'
+
+const STEP_ICONS: Record<string, React.ReactNode> = {
+  email   : <LockClosedIcon    className="w-9 h-9 text-white" />,
+  otp     : <EnvelopeIcon      className="w-9 h-9 text-white" />,
+  password: <KeyIcon           className="w-9 h-9 text-white" />,
+  done    : <CheckCircleIcon   className="w-9 h-9 text-white" />,
+}
 
 export default function ForgotPassword() {
   const navigate          = useNavigate()
@@ -53,13 +61,13 @@ export default function ForgotPassword() {
   }
 
   const stepTitles = {
-    email   : { icon: '🔐', title: 'Forgot Password',    sub: 'Enter your email to receive an OTP' },
-    otp     : { icon: '📧', title: 'Check Your Email',   sub: `We sent a 6-digit OTP to ${email}` },
-    password: { icon: '🔑', title: 'Set New Password',   sub: 'Choose a strong new password' },
-    done    : { icon: '✅', title: 'Password Reset!',    sub: 'Your password has been updated successfully' },
+    email   : { title: 'Forgot Password',    sub: 'Enter your email to receive an OTP' },
+    otp     : { title: 'Check Your Email',   sub: `We sent a 6-digit OTP to ${email}` },
+    password: { title: 'Set New Password',   sub: 'Choose a strong new password' },
+    done    : { title: 'Password Reset!',    sub: 'Your password has been updated successfully' },
   }
 
-  const { icon, title, sub } = stepTitles[step]
+  const { title, sub } = stepTitles[step]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
@@ -67,8 +75,8 @@ export default function ForgotPassword() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-4xl">{icon}</span>
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${step === 'done' ? 'bg-green-500' : 'bg-primary-600'}`}>
+            {STEP_ICONS[step]}
           </div>
           <h1 className="text-2xl font-extrabold text-gray-800">{title}</h1>
           <p className="text-gray-500 mt-1 text-sm">{sub}</p>
@@ -77,7 +85,7 @@ export default function ForgotPassword() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
-              <span>❌</span>{error}
+              <XCircleIcon className="w-4 h-4 flex-shrink-0" />{error}
             </div>
           )}
 

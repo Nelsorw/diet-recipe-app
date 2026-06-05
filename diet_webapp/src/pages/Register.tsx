@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { CheckCircleIcon, XCircleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 
 export default function Register() {
   const { register }            = useAuth()
@@ -29,7 +30,7 @@ export default function Register() {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">✅</span>
+              <CheckCircleIcon className="w-10 h-10 text-green-500" />
             </div>
             <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Account Created!</h2>
             <p className="text-gray-500 text-sm mb-6">
@@ -52,7 +53,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-4xl">🥗</span>
+            <img src="/logo-icon.png" alt="logo" className="w-12 h-12 rounded-full object-cover" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-800">Create Account</h1>
           <p className="text-gray-500 mt-1">Start your health journey today</p>
@@ -61,13 +62,13 @@ export default function Register() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Info banner */}
           <div className="mb-5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
-            <span className="text-base mt-0.5">🔐</span>
+            <ShieldCheckIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <p>No need to set a password — a secure one will be generated and emailed to you automatically.</p>
           </div>
 
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
-              <span>❌</span>{error}
+              <XCircleIcon className="w-4 h-4 flex-shrink-0" />{error}
             </div>
           )}
 

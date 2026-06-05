@@ -138,7 +138,7 @@ export default function Home() {
           </div>
         ) : recipes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <span className="text-5xl mb-3">🔍</span>
+            <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <p className="text-gray-600 font-semibold mb-1">No recipes found</p>
             <p className="text-gray-400 text-sm">Try a different filter or tap Discover New.</p>
           </div>

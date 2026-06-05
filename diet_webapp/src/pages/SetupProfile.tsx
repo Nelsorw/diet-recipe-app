@@ -100,7 +100,9 @@ export default function SetupProfile() {
                   step === s.num ? 'bg-primary-600 text-white ring-4 ring-primary-100' :
                   'bg-gray-100 text-gray-400'
                 }`}>
-                  {step > s.num ? '✓' : s.num}
+                  {step > s.num
+                    ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    : s.num}
                 </div>
                 <span className={`text-[10px] mt-1 font-semibold ${step === s.num ? 'text-primary-600' : 'text-gray-400'}`}>
                   {s.label}
@@ -238,7 +240,7 @@ export default function SetupProfile() {
                       </div>
                       {form.activity_level === a.value && (
                         <div className="ml-auto w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-[10px]">✓</span>
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                         </div>
                       )}
                     </button>
@@ -272,7 +274,7 @@ export default function SetupProfile() {
                     </div>
                     {form.health_goal === g.value && (
                       <div className="ml-auto w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs">✓</span>
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       </div>
                     )}
                   </button>
@@ -301,7 +303,9 @@ export default function SetupProfile() {
                       }`}
                     >
                       {c}
-                      {form.health_condition === c && <span className="text-primary-600">✓</span>}
+                      {form.health_condition === c && (
+                        <svg className="w-4 h-4 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      )}
                     </button>
                   ))}
                 </div>

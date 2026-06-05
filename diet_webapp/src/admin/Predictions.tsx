@@ -215,8 +215,8 @@ export default function Predictions() {
                     <td className="px-4 py-2.5 text-center font-bold text-primary-600">{(p.suitability_score * 100).toFixed(0)}%</td>
                     <td className="px-4 py-2.5 text-center">
                       {p.suitable
-                        ? <span className="text-green-500 font-bold">✓</span>
-                        : <span className="text-red-400 font-bold">✗</span>
+                        ? <svg className="w-4 h-4 text-green-500 mx-auto" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        : <svg className="w-4 h-4 text-red-400 mx-auto" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                       }
                     </td>
                     <td className="px-4 py-2.5 hidden sm:table-cell">

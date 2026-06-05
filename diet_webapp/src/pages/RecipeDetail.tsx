@@ -408,7 +408,8 @@ export default function RecipeDetail() {
         {/* ── Warning ── */}
         {logMessage && (
           <div className="bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2">
-            <span>⚠️</span> {logMessage}
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            {logMessage}
           </div>
         )}
 
@@ -422,7 +423,12 @@ export default function RecipeDetail() {
                 : 'bg-white border-primary-200 hover:bg-primary-50 hover:border-primary-400 active:scale-95'
             }`}
           >
-            <span className="text-2xl">{planSuccess ? '✅' : '📅'}</span>
+            <span className="text-2xl">
+              {planSuccess
+                ? <svg className="w-7 h-7 text-green-600 mx-auto" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                : <svg className="w-7 h-7 text-primary-700 mx-auto" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              }
+            </span>
             <span className={`text-xs font-bold ${planSuccess ? 'text-green-600' : 'text-primary-700'}`}>
               {planSuccess
                 ? `Added · ${new Date(planSuccess).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Change`

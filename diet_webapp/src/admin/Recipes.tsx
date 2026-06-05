@@ -132,7 +132,10 @@ export default function Recipes() {
                   <td className="px-4 py-3 text-right text-gray-600">{Math.round(r.calories || 0)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{(r.protein || 0).toFixed(1)}g</td>
                   <td className="px-4 py-3 text-center">
-                    {r.image_url ? <span className="text-green-500 text-xs font-bold">✓</span> : <span className="text-gray-300 text-xs">—</span>}
+                    {r.image_url
+                      ? <svg className="w-4 h-4 text-green-500 mx-auto" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      : <span className="text-gray-300 text-xs">—</span>
+                    }
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end">

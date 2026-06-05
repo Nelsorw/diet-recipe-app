@@ -170,7 +170,12 @@ export default function LogMeal() {
                         <span className={`text-[10px] font-bold mt-1 capitalize ${done ? 'text-green-600' : 'text-gray-400'}`}>
                           {type}
                         </span>
-                        <span className="text-[10px] mt-0.5">{done ? '✅' : '⬜'}</span>
+                        <span className="text-[10px] mt-0.5">
+                          {done
+                            ? <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            : <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+                          }
+                        </span>
                       </div>
                     )
                   })}

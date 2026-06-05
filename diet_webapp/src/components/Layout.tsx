@@ -48,6 +48,7 @@ export default function Layout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [profileOpen, setProfileOpen] = useState(false)
   const [profile, setProfile]         = useState<any>(null)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const displayName = user?.username || user?.email?.split('@')[0] || 'there'
 
@@ -92,6 +93,30 @@ export default function Layout() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+
+      {/* Sign out confirmation modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Sign Out</h3>
+            <p className="text-sm text-gray-500 mb-6">Are you sure you want to sign out?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 border border-gray-200 text-gray-600 font-semibold py-3 rounded-2xl hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); logout() }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top header */}
       <header className={`bg-primary-600 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 transition-shadow duration-300 ${scrolled ? 'shadow-xl' : 'shadow-sm'}`}>
@@ -188,7 +213,7 @@ export default function Layout() {
 
                 <div className="border-t border-gray-100 py-1">
                   <button
-                    onClick={() => { setProfileOpen(false); logout() }}
+                    onClick={() => { setProfileOpen(false); setShowLogoutConfirm(true) }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">

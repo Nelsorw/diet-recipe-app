@@ -161,7 +161,12 @@ export default function RecipeEdit() {
             className="bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-colors">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
-          {saved && <span className="text-green-600 text-sm font-semibold">✓ Saved successfully</span>}
+          {saved && (
+            <span className="text-green-600 text-sm font-semibold flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              Saved successfully
+            </span>
+          )}
         </div>
       </form>
     </div>
