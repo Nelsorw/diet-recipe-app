@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import {
+  CpuChipIcon, CalendarDaysIcon, ChartBarIcon, UserGroupIcon,
+  BellIcon, ShieldCheckIcon
+} from '@heroicons/react/24/outline'
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
@@ -23,32 +27,32 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 const FEATURES = [
   {
-    icon : '🧠',
+    icon : <CpuChipIcon className="w-6 h-6 text-primary-600" />,
     title: 'AI-Powered Recommendations',
     desc : 'Our machine learning model analyzes your health profile and suggests the most suitable recipes tailored just for you.'
   },
   {
-    icon : '🥗',
+    icon : <CalendarDaysIcon className="w-6 h-6 text-primary-600" />,
     title: 'Personalized Meal Plans',
     desc : 'Get a full weekly meal plan generated automatically based on your nutrition targets, health conditions, and dietary restrictions.'
   },
   {
-    icon : '📊',
+    icon : <ChartBarIcon className="w-6 h-6 text-primary-600" />,
     title: 'Track Your Progress',
     desc : 'Log every meal and watch your daily nutrition progress. Streaks, achievements, and weekly summaries keep you motivated.'
   },
   {
-    icon : '👨‍👩‍👧',
+    icon : <UserGroupIcon className="w-6 h-6 text-primary-600" />,
     title: 'Multiple Profiles',
     desc : 'Manage nutrition for your whole family. Switch between profiles for yourself, your children, or elderly relatives.'
   },
   {
-    icon : '🔔',
+    icon : <BellIcon className="w-6 h-6 text-primary-600" />,
     title: 'Smart Reminders',
     desc : 'Receive meal reminders, streak notifications, and achievement alerts directly in the app and via email.'
   },
   {
-    icon : '🌿',
+    icon : <ShieldCheckIcon className="w-6 h-6 text-primary-600" />,
     title: 'Health Condition Aware',
     desc : 'The system understands conditions like diabetes, hypertension, and heart disease to recommend truly safe meals.'
   },
@@ -113,7 +117,7 @@ export default function Landing() {
               onClick={() => navigate('/register')}
               className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all shadow-lg shadow-primary-200 hover:shadow-xl hover:-translate-y-0.5 min-h-[52px]"
             >
-              Start for Free
+              Get Started
             </button>
             <button
               onClick={() => navigate('/login')}
@@ -148,7 +152,7 @@ export default function Landing() {
                 key={i}
                 className="bg-gray-50 hover:bg-primary-50 border border-gray-100 hover:border-primary-200 rounded-2xl p-6 transition-all hover:-translate-y-1 hover:shadow-md"
               >
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm mb-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
                   {f.icon}
                 </div>
                 <h3 className="font-bold text-gray-800 text-base mb-2">{f.title}</h3>
@@ -198,28 +202,28 @@ export default function Landing() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
-                icon : '🩺',
+                icon : <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 002.25 2.25h.75" /></svg>,
                 title: 'No Specific Condition',
                 desc : 'General healthy eating and balanced nutrition for anyone looking to improve their diet and lifestyle.',
                 color: 'bg-green-50 border-green-100',
                 badge: 'bg-green-100 text-green-700',
               },
               {
-                icon : '💉',
+                icon : <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>,
                 title: 'Type 2 Diabetes',
                 desc : 'Low-glycemic, carb-controlled recipes that help manage blood sugar levels safely.',
                 color: 'bg-blue-50 border-blue-100',
                 badge: 'bg-blue-100 text-blue-700',
               },
               {
-                icon : '❤️',
+                icon : <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>,
                 title: 'High Blood Pressure',
                 desc : 'Low-sodium, potassium-rich meals specifically chosen to support healthy blood pressure.',
                 color: 'bg-red-50 border-red-100',
                 badge: 'bg-red-100 text-red-700',
               },
               {
-                icon : '🫀',
+                icon : <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
                 title: 'Heart Disease',
                 desc : 'Low saturated fat, low cholesterol recipes that protect cardiovascular health.',
                 color: 'bg-orange-50 border-orange-100',
@@ -227,7 +231,7 @@ export default function Landing() {
               },
             ].map((c, i) => (
               <div key={i} className={`rounded-2xl border p-6 ${c.color} transition-all hover:-translate-y-1 hover:shadow-md`}>
-                <div className="text-3xl mb-4">{c.icon}</div>
+                <div className="mb-4">{c.icon}</div>
                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${c.badge}`}>{c.title}</span>
                 <p className="text-gray-500 text-sm leading-relaxed mt-3">{c.desc}</p>
               </div>

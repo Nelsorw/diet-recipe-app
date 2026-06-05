@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { adminDemographics } from '../services/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
 import * as XLSX from 'xlsx'
+import { UsersIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 
 const COLORS      = ['#16a34a', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 const AGE_COLORS  = { child: '#3b82f6', adult: '#16a34a', older: '#f59e0b', unknown: '#9ca3af' }
@@ -236,26 +237,41 @@ export default function Demographics() {
           onClick={exportExcel}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm shadow-sm"
         >
-          <span>📥</span> Download Excel Report
+          <ArrowDownTrayIcon className="w-4 h-4" /> Download Excel Report
         </button>
       </div>
 
-      {/* ── Overview cards ── */}
+      {/* Overview cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Profiles', value: data.total_profiles,       color: 'bg-primary-50 text-primary-700', icon: '👥' },
-          { label: 'Male',           value: data.gender.male,          color: 'bg-blue-50 text-blue-700',       icon: '👨' },
-          { label: 'Female',         value: data.gender.female,        color: 'bg-pink-50 text-pink-700',       icon: '👩' },
-          { label: 'Elderly',        value: data.age_groups.older,         color: 'bg-yellow-50 text-yellow-700',   icon: '�' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl mx-auto mb-2 ${s.color}`}>{s.icon}</div>
-            <p className="text-xl font-extrabold text-gray-900">{s.value.toLocaleString()}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 bg-primary-50 text-primary-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
           </div>
-        ))}
+          <p className="text-xl font-extrabold text-gray-900">{data.total_profiles.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Total Profiles</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 bg-blue-50 text-blue-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </div>
+          <p className="text-xl font-extrabold text-gray-900">{data.gender.male.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Male</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 bg-pink-50 text-pink-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </div>
+          <p className="text-xl font-extrabold text-gray-900">{data.gender.female.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Female</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 bg-yellow-50 text-yellow-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          </div>
+          <p className="text-xl font-extrabold text-gray-900">{data.age_groups.older.toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Elderly</p>
+        </div>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Gender donut */}

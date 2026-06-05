@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { adminDashboard } from '../services/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
+import {
+  UsersIcon, UserPlusIcon, BookOpenIcon, ClipboardDocumentListIcon,
+  BellIcon, ChatBubbleLeftRightIcon, BookmarkIcon, PhotoIcon
+} from '@heroicons/react/24/outline'
 
 const COLORS = ['#16a34a', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
@@ -13,7 +17,7 @@ function StatCard({ icon, label, value, sub, color = 'bg-primary-50 text-primary
           <p className="text-xl md:text-2xl font-extrabold text-gray-900">{value?.toLocaleString()}</p>
           {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
         </div>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${color}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
           {icon}
         </div>
       </div>
@@ -59,17 +63,17 @@ export default function Dashboard() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon="👥" label="Total Users"     value={data.users?.total}        sub={`${data.users?.active_7d} active this week`}  color="bg-blue-50 text-blue-700" />
-        <StatCard icon="🆕" label="New This Month"  value={data.users?.new_30d}       sub={`${data.users?.total_profiles} profiles · ${data.users?.suspended_profiles || 0} suspended`} color="bg-green-50 text-green-700" />
-        <StatCard icon="🥗" label="Total Recipes"   value={data.recipes?.total}       sub={`${data.recipes?.image_pct}% have images`}     color="bg-orange-50 text-orange-700" />
-        <StatCard icon="📝" label="Logs Today"      value={data.activity?.logs_today} sub={`${data.activity?.logs_7d} this week`}          color="bg-purple-50 text-purple-700" />
+        <StatCard icon={<UsersIcon className="w-5 h-5" />}                  label="Total Users"     value={data.users?.total}        sub={`${data.users?.active_7d} active this week`}  color="bg-blue-50 text-blue-700" />
+        <StatCard icon={<UserPlusIcon className="w-5 h-5" />}               label="New This Month"  value={data.users?.new_30d}       sub={`${data.users?.total_profiles} profiles · ${data.users?.suspended_profiles || 0} suspended`} color="bg-green-50 text-green-700" />
+        <StatCard icon={<BookOpenIcon className="w-5 h-5" />}               label="Total Recipes"   value={data.recipes?.total}       sub={`${data.recipes?.image_pct}% have images`}     color="bg-orange-50 text-orange-700" />
+        <StatCard icon={<ClipboardDocumentListIcon className="w-5 h-5" />}  label="Logs Today"      value={data.activity?.logs_today} sub={`${data.activity?.logs_7d} this week`}          color="bg-purple-50 text-purple-700" />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon="🔔" label="Notifications"    value={data.activity?.notifications} color="bg-yellow-50 text-yellow-700" />
-        <StatCard icon="💬" label="Chat Messages"    value={data.activity?.chat_messages} color="bg-indigo-50 text-indigo-700" />
-        <StatCard icon="🔖" label="Saved Recipes"    value={data.activity?.saved_recipes} color="bg-pink-50 text-pink-700" />
-        <StatCard icon="🖼️" label="Recipes w/ Image" value={data.recipes?.with_image}    sub={`${data.recipes?.without_image} missing`}   color="bg-teal-50 text-teal-700" />
+        <StatCard icon={<BellIcon className="w-5 h-5" />}                   label="Notifications"    value={data.activity?.notifications} color="bg-yellow-50 text-yellow-700" />
+        <StatCard icon={<ChatBubbleLeftRightIcon className="w-5 h-5" />}    label="Chat Messages"    value={data.activity?.chat_messages} color="bg-indigo-50 text-indigo-700" />
+        <StatCard icon={<BookmarkIcon className="w-5 h-5" />}               label="Saved Recipes"    value={data.activity?.saved_recipes} color="bg-pink-50 text-pink-700" />
+        <StatCard icon={<PhotoIcon className="w-5 h-5" />}                  label="Recipes w/ Image" value={data.recipes?.with_image}    sub={`${data.recipes?.without_image} missing`}   color="bg-teal-50 text-teal-700" />
       </div>
 
       {/* Charts — stack on mobile, 2-col on desktop */}
