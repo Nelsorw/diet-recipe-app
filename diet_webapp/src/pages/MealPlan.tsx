@@ -113,6 +113,7 @@ export default function MealPlan() {
   const [regenDay, setRegenDay]             = useState<string | null>(null)
   const [loggedMeals, setLoggedMeals]       = useState<Set<string>>(new Set())
   const [loggingMeal, setLoggingMeal]       = useState<string | null>(null)
+  const [planMode, setPlanMode]             = useState<'daily' | 'weekly'>('weekly')
 
   const todayStr  = localDateStr()
   const weekDates = Object.keys(weeklyPlan).length > 0
@@ -165,8 +166,21 @@ export default function MealPlan() {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      const res = await generateMealPlan()
-      setWeeklyPlan(res.data.weekly_plan || {})
+      const res = await generateMealPlan(planMode)
+      if (planMode === 'daily') {
+        // daily returns a single day — wrap it in weekly format
+        const today = localDateStr()
+        setWeeklyPlan(prev => ({
+          ...prev,
+          [today]: {
+            meals     : res.data.meal_plan || [],
+            day_totals: res.data.day_totals || {}
+          }
+        }))
+        setSelectedDate(today)
+      } else {
+        setWeeklyPlan(res.data.weekly_plan || {})
+      }
       setTargets(res.data.daily_targets || null)
     } catch (_) {} finally { setGenerating(false) }
   }
@@ -206,13 +220,43 @@ export default function MealPlan() {
 
       <div className="p-4 space-y-4">
 
-        {/* Generate */}
-        <button onClick={handleGenerate} disabled={generating}
-          className="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2">
-          {generating
-            ? <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Generating your week...</>
-            : '✨ Generate Weekly Plan'}
-        </button>
+        {/* Plan type selector + Generate */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Generate Meal Plan</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPlanMode('daily')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                planMode === 'daily'
+                  ? 'bg-primary-600 border-primary-600 text-white shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-primary-300'
+              }`}
+            >
+              Today Only
+            </button>
+            <button
+              onClick={() => setPlanMode('weekly')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                planMode === 'weekly'
+                  ? 'bg-primary-600 border-primary-600 text-white shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-primary-300'
+              }`}
+            >
+              Full Week
+            </button>
+          </div>
+          <button onClick={handleGenerate} disabled={generating}
+            className="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+            {generating
+              ? <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> Generating{planMode === 'daily' ? ' today...' : ' your week...'}</>
+              : planMode === 'daily' ? 'Generate Today\'s Plan' : 'Generate Plan'}
+          </button>
+          <p className="text-[10px] text-gray-400 text-center">
+            {planMode === 'daily'
+              ? 'Creates a plan for today only.'
+              : 'Creates a full 7-day plan.'}
+          </p>
+        </div>
 
         {Object.keys(weeklyPlan).length === 0 ? (
           <div className="text-center py-20">
@@ -220,7 +264,7 @@ export default function MealPlan() {
               <span className="text-4xl">🥗</span>
             </div>
             <p className="text-gray-700 font-bold mb-1">No meal plan yet</p>
-            <p className="text-gray-400 text-sm">Tap Generate to create your personalized weekly plan.</p>
+            <p className="text-gray-400 text-sm">Choose Today Only or Full Week above, then tap Generate.</p>
           </div>
         ) : (
           <>

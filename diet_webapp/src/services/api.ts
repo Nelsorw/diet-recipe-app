@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://10.195.171.159:5000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.0.4:5000'
 
 const api = axios.create({ baseURL: BASE_URL })
 
@@ -80,7 +80,7 @@ export const getRecommendations = (params?: any) =>
 export const getRecipeById = (id: number) => api.get(`/recipes/${id}`)
 
 // Meal plan
-export const generateMealPlan    = ()              => api.post('/mealplan/generate?mode=weekly')
+export const generateMealPlan    = (mode: 'daily' | 'weekly' = 'weekly') => api.post(`/mealplan/generate?mode=${mode}`)
 export const regenerateDayPlan   = (date: string)  => api.post(`/mealplan/regenerate-day?date=${date}`)
 export const getDailyMealPlan    = (date?: string) => api.get('/mealplan/daily', { params: { date } })
 export const getWeeklyMealPlan   = ()              => api.get('/mealplan/weekly')
